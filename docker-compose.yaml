@@ -1,0 +1,37 @@
+version: "3.9"
+
+services:
+  app: #サービス名
+    build:
+      context: ./ #ビルドに使用するDockerfileの場所
+      dockerfile: ./Dockerfile
+    tty: true #コンテナの永続化
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "8080:8080"
+    depends_on: #依存関係
+      - db
+    volumes: #マウントディレクトリ
+      - .:/go/src/app
+      # - go-data:/go
+  db:
+    image: postgres:14.4-alpine
+    environment:
+      POSTGRES_DB: engin
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - ./tmp/db:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - "81:80"
+    depends_on:
+      - app
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf

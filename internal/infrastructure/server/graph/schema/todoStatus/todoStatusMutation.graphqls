@@ -1,0 +1,14 @@
+input CreateTodoStatusInput {
+  todoStatus: String!
+}
+
+input UpdateTodoStatusInput {
+  id: Int!
+  todoStatus: String!
+}
+
+extend type Mutation {
+  createTodoStatus(input: CreateTodoStatusInput!): TodoStatus!
+  updateTodoStatus(input: UpdateTodoStatusInput!): TodoStatus!
+  deleteTodoStatus(id: Int!): Boolean!
+}

@@ -1,0 +1,11 @@
+type Todo implements Node {
+  id: ID!
+  todo: String!
+  todoStatusId: Int!
+  user: User!
+}
+
+type TodoPagination implements Pagination {
+  pageInfo: PaginationInfo!
+  nodes: [Todo!]!
+}

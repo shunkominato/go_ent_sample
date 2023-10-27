@@ -1,0 +1,18 @@
+input CreateTodoInput {
+  todo: String!
+  todoStatusId: Int!
+  userId: Int!
+}
+
+input UpdateTodoInput {
+  id: Int!
+  todo: String!
+  todoStatusId: Int!
+  userId: Int!
+}
+
+extend type Mutation {
+  createTodo(input: CreateTodoInput!): Todo!
+  updateTodo(input: UpdateTodoInput!): Todo!
+  deleteTodo(id: Int!): Boolean!
+}
