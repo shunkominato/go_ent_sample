@@ -6,8 +6,8 @@ import (
 	"context"
 	"database/sql/driver"
 	"fmt"
+	"go-gql-sample/app/ent/car"
 	"go-gql-sample/app/ent/predicate"
-	"go-gql-sample/app/ent/todo"
 	"go-gql-sample/app/ent/user"
 	"math"
 
@@ -23,7 +23,7 @@ type UserQuery struct {
 	order      []OrderFunc
 	inters     []Interceptor
 	predicates []predicate.User
-	withTodos  *TodoQuery
+	withCars   *CarQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -60,9 +60,9 @@ func (uq *UserQuery) Order(o ...OrderFunc) *UserQuery {
 	return uq
 }
 
-// QueryTodos chains the current query on the "todos" edge.
-func (uq *UserQuery) QueryTodos() *TodoQuery {
-	query := (&TodoClient{config: uq.config}).Query()
+// QueryCars chains the current query on the "cars" edge.
+func (uq *UserQuery) QueryCars() *CarQuery {
+	query := (&CarClient{config: uq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := uq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -73,8 +73,8 @@ func (uq *UserQuery) QueryTodos() *TodoQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, selector),
-			sqlgraph.To(todo.Table, todo.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, user.TodosTable, user.TodosColumn),
+			sqlgraph.To(car.Table, car.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.CarsTable, user.CarsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
 		return fromU, nil
@@ -274,21 +274,21 @@ func (uq *UserQuery) Clone() *UserQuery {
 		order:      append([]OrderFunc{}, uq.order...),
 		inters:     append([]Interceptor{}, uq.inters...),
 		predicates: append([]predicate.User{}, uq.predicates...),
-		withTodos:  uq.withTodos.Clone(),
+		withCars:   uq.withCars.Clone(),
 		// clone intermediate query.
 		sql:  uq.sql.Clone(),
 		path: uq.path,
 	}
 }
 
-// WithTodos tells the query-builder to eager-load the nodes that are connected to
-// the "todos" edge. The optional arguments are used to configure the query builder of the edge.
-func (uq *UserQuery) WithTodos(opts ...func(*TodoQuery)) *UserQuery {
-	query := (&TodoClient{config: uq.config}).Query()
+// WithCars tells the query-builder to eager-load the nodes that are connected to
+// the "cars" edge. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithCars(opts ...func(*CarQuery)) *UserQuery {
+	query := (&CarClient{config: uq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	uq.withTodos = query
+	uq.withCars = query
 	return uq
 }
 
@@ -298,12 +298,12 @@ func (uq *UserQuery) WithTodos(opts ...func(*TodoQuery)) *UserQuery {
 // Example:
 //
 //	var v []struct {
-//		Provider string `json:"provider,omitempty"`
+//		Age int `json:"age,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.User.Query().
-//		GroupBy(user.FieldProvider).
+//		GroupBy(user.FieldAge).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (uq *UserQuery) GroupBy(field string, fields ...string) *UserGroupBy {
@@ -321,11 +321,11 @@ func (uq *UserQuery) GroupBy(field string, fields ...string) *UserGroupBy {
 // Example:
 //
 //	var v []struct {
-//		Provider string `json:"provider,omitempty"`
+//		Age int `json:"age,omitempty"`
 //	}
 //
 //	client.User.Query().
-//		Select(user.FieldProvider).
+//		Select(user.FieldAge).
 //		Scan(ctx, &v)
 func (uq *UserQuery) Select(fields ...string) *UserSelect {
 	uq.ctx.Fields = append(uq.ctx.Fields, fields...)
@@ -371,7 +371,7 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		nodes       = []*User{}
 		_spec       = uq.querySpec()
 		loadedTypes = [1]bool{
-			uq.withTodos != nil,
+			uq.withCars != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -392,17 +392,17 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := uq.withTodos; query != nil {
-		if err := uq.loadTodos(ctx, query, nodes,
-			func(n *User) { n.Edges.Todos = []*Todo{} },
-			func(n *User, e *Todo) { n.Edges.Todos = append(n.Edges.Todos, e) }); err != nil {
+	if query := uq.withCars; query != nil {
+		if err := uq.loadCars(ctx, query, nodes,
+			func(n *User) { n.Edges.Cars = []*Car{} },
+			func(n *User, e *Car) { n.Edges.Cars = append(n.Edges.Cars, e) }); err != nil {
 			return nil, err
 		}
 	}
 	return nodes, nil
 }
 
-func (uq *UserQuery) loadTodos(ctx context.Context, query *TodoQuery, nodes []*User, init func(*User), assign func(*User, *Todo)) error {
+func (uq *UserQuery) loadCars(ctx context.Context, query *CarQuery, nodes []*User, init func(*User), assign func(*User, *Car)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[int]*User)
 	for i := range nodes {
@@ -412,18 +412,22 @@ func (uq *UserQuery) loadTodos(ctx context.Context, query *TodoQuery, nodes []*U
 			init(nodes[i])
 		}
 	}
-	query.Where(predicate.Todo(func(s *sql.Selector) {
-		s.Where(sql.InValues(user.TodosColumn, fks...))
+	query.withFKs = true
+	query.Where(predicate.Car(func(s *sql.Selector) {
+		s.Where(sql.InValues(user.CarsColumn, fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.UserID
-		node, ok := nodeids[fk]
+		fk := n.user_cars
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_cars" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "user_id" returned %v for node %v`, fk, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "user_cars" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

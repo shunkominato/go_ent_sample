@@ -8,92 +8,43 @@ import (
 )
 
 var (
-	// ArInternalMetadataColumns holds the columns for the "ar_internal_metadata" table.
-	ArInternalMetadataColumns = []*schema.Column{
-		{Name: "key", Type: field.TypeString},
-		{Name: "value", Type: field.TypeString, Nullable: true},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
+	// CarsColumns holds the columns for the "cars" table.
+	CarsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "model", Type: field.TypeString},
+		{Name: "registered_at", Type: field.TypeTime},
+		{Name: "user_cars", Type: field.TypeInt, Nullable: true},
 	}
-	// ArInternalMetadataTable holds the schema information for the "ar_internal_metadata" table.
-	ArInternalMetadataTable = &schema.Table{
-		Name:       "ar_internal_metadata",
-		Columns:    ArInternalMetadataColumns,
-		PrimaryKey: []*schema.Column{ArInternalMetadataColumns[0]},
-	}
-	// SchemaMigrationsColumns holds the columns for the "schema_migrations" table.
-	SchemaMigrationsColumns = []*schema.Column{
-		{Name: "version", Type: field.TypeString},
-	}
-	// SchemaMigrationsTable holds the schema information for the "schema_migrations" table.
-	SchemaMigrationsTable = &schema.Table{
-		Name:       "schema_migrations",
-		Columns:    SchemaMigrationsColumns,
-		PrimaryKey: []*schema.Column{SchemaMigrationsColumns[0]},
-	}
-	// TodosColumns holds the columns for the "todos" table.
-	TodosColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true, SchemaType: map[string]string{"postgres": "bigserial"}},
-		{Name: "todo", Type: field.TypeString},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "todo_statuses_id", Type: field.TypeInt, Nullable: true, SchemaType: map[string]string{"postgres": "bigserial"}},
-		{Name: "user_id", Type: field.TypeInt, Nullable: true, SchemaType: map[string]string{"postgres": "bigserial"}},
-	}
-	// TodosTable holds the schema information for the "todos" table.
-	TodosTable = &schema.Table{
-		Name:       "todos",
-		Columns:    TodosColumns,
-		PrimaryKey: []*schema.Column{TodosColumns[0]},
+	// CarsTable holds the schema information for the "cars" table.
+	CarsTable = &schema.Table{
+		Name:       "cars",
+		Columns:    CarsColumns,
+		PrimaryKey: []*schema.Column{CarsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "todos_todo_status_todos",
-				Columns:    []*schema.Column{TodosColumns[4]},
-				RefColumns: []*schema.Column{TodoStatusColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-			{
-				Symbol:     "todos_users_todos",
-				Columns:    []*schema.Column{TodosColumns[5]},
+				Symbol:     "cars_users_cars",
+				Columns:    []*schema.Column{CarsColumns[3]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 		},
 	}
-	// TodoStatusColumns holds the columns for the "todo_status" table.
-	TodoStatusColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true, SchemaType: map[string]string{"postgres": "bigserial"}},
-		{Name: "status", Type: field.TypeString},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
+	// GroupsColumns holds the columns for the "groups" table.
+	GroupsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "name", Type: field.TypeString},
 	}
-	// TodoStatusTable holds the schema information for the "todo_status" table.
-	TodoStatusTable = &schema.Table{
-		Name:       "todo_status",
-		Columns:    TodoStatusColumns,
-		PrimaryKey: []*schema.Column{TodoStatusColumns[0]},
+	// GroupsTable holds the schema information for the "groups" table.
+	GroupsTable = &schema.Table{
+		Name:       "groups",
+		Columns:    GroupsColumns,
+		PrimaryKey: []*schema.Column{GroupsColumns[0]},
 	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeInt, Increment: true, SchemaType: map[string]string{"postgres": "bigserial"}},
-		{Name: "provider", Type: field.TypeString},
-		{Name: "uid", Type: field.TypeString},
-		{Name: "encrypted_password", Type: field.TypeString},
-		{Name: "reset_password_token", Type: field.TypeString, Unique: true, Nullable: true},
-		{Name: "reset_password_sent_at", Type: field.TypeTime, Nullable: true},
-		{Name: "allow_password_change", Type: field.TypeBool, Nullable: true},
-		{Name: "remember_created_at", Type: field.TypeTime, Nullable: true},
-		{Name: "confirmation_token", Type: field.TypeString, Unique: true, Nullable: true},
-		{Name: "confirmed_at", Type: field.TypeTime, Nullable: true},
-		{Name: "confirmation_sent_at", Type: field.TypeTime, Nullable: true},
-		{Name: "unconfirmed_email", Type: field.TypeString, Nullable: true},
-		{Name: "name", Type: field.TypeString, Nullable: true},
-		{Name: "nickname", Type: field.TypeString, Nullable: true},
-		{Name: "image", Type: field.TypeString, Nullable: true},
-		{Name: "email", Type: field.TypeString, Unique: true, Nullable: true},
-		{Name: "tokens", Type: field.TypeJSON, Nullable: true},
-		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "age", Type: field.TypeInt},
+		{Name: "name", Type: field.TypeString, Default: "-"},
 	}
 	// UsersTable holds the schema information for the "users" table.
 	UsersTable = &schema.Table{
@@ -103,15 +54,12 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
-		ArInternalMetadataTable,
-		SchemaMigrationsTable,
-		TodosTable,
-		TodoStatusTable,
+		CarsTable,
+		GroupsTable,
 		UsersTable,
 	}
 )
 
 func init() {
-	TodosTable.ForeignKeys[0].RefTable = TodoStatusTable
-	TodosTable.ForeignKeys[1].RefTable = UsersTable
+	CarsTable.ForeignKeys[0].RefTable = UsersTable
 }

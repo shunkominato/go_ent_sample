@@ -1,8 +1,11 @@
 package db
 
 import (
+	"context"
 	"fmt"
 	"go-gql-sample/app/ent"
+	"go-gql-sample/app/ent/migrate"
+	"log"
 	"os"
 
 	_ "github.com/lib/pq"
@@ -26,4 +29,15 @@ func (d *Database) Close() {
 }
 func (d *Database) EntClient() *ent.Client {
 	return d.client
+}
+
+func (d *Database) Migrate() {
+	err := d.client.Schema.Create(
+			context.Background(),
+			migrate.WithDropIndex(true),
+			migrate.WithDropColumn(true),
+	)
+	if err != nil {
+			log.Fatalf("failed creating schema resources: %v", err)
+	}
 }

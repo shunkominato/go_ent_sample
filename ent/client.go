@@ -10,10 +10,8 @@ import (
 
 	"go-gql-sample/app/ent/migrate"
 
-	"go-gql-sample/app/ent/arinternalmetadatum"
-	"go-gql-sample/app/ent/schemamigration"
-	"go-gql-sample/app/ent/todo"
-	"go-gql-sample/app/ent/todostatus"
+	"go-gql-sample/app/ent/car"
+	"go-gql-sample/app/ent/group"
 	"go-gql-sample/app/ent/user"
 
 	"entgo.io/ent"
@@ -27,14 +25,10 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
-	// ArInternalMetadatum is the client for interacting with the ArInternalMetadatum builders.
-	ArInternalMetadatum *ArInternalMetadatumClient
-	// SchemaMigration is the client for interacting with the SchemaMigration builders.
-	SchemaMigration *SchemaMigrationClient
-	// Todo is the client for interacting with the Todo builders.
-	Todo *TodoClient
-	// TodoStatus is the client for interacting with the TodoStatus builders.
-	TodoStatus *TodoStatusClient
+	// Car is the client for interacting with the Car builders.
+	Car *CarClient
+	// Group is the client for interacting with the Group builders.
+	Group *GroupClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 }
@@ -50,10 +44,8 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
-	c.ArInternalMetadatum = NewArInternalMetadatumClient(c.config)
-	c.SchemaMigration = NewSchemaMigrationClient(c.config)
-	c.Todo = NewTodoClient(c.config)
-	c.TodoStatus = NewTodoStatusClient(c.config)
+	c.Car = NewCarClient(c.config)
+	c.Group = NewGroupClient(c.config)
 	c.User = NewUserClient(c.config)
 }
 
@@ -135,13 +127,11 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:                 ctx,
-		config:              cfg,
-		ArInternalMetadatum: NewArInternalMetadatumClient(cfg),
-		SchemaMigration:     NewSchemaMigrationClient(cfg),
-		Todo:                NewTodoClient(cfg),
-		TodoStatus:          NewTodoStatusClient(cfg),
-		User:                NewUserClient(cfg),
+		ctx:    ctx,
+		config: cfg,
+		Car:    NewCarClient(cfg),
+		Group:  NewGroupClient(cfg),
+		User:   NewUserClient(cfg),
 	}, nil
 }
 
@@ -159,20 +149,18 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:                 ctx,
-		config:              cfg,
-		ArInternalMetadatum: NewArInternalMetadatumClient(cfg),
-		SchemaMigration:     NewSchemaMigrationClient(cfg),
-		Todo:                NewTodoClient(cfg),
-		TodoStatus:          NewTodoStatusClient(cfg),
-		User:                NewUserClient(cfg),
+		ctx:    ctx,
+		config: cfg,
+		Car:    NewCarClient(cfg),
+		Group:  NewGroupClient(cfg),
+		User:   NewUserClient(cfg),
 	}, nil
 }
 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		ArInternalMetadatum.
+//		Car.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -194,34 +182,26 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
-	c.ArInternalMetadatum.Use(hooks...)
-	c.SchemaMigration.Use(hooks...)
-	c.Todo.Use(hooks...)
-	c.TodoStatus.Use(hooks...)
+	c.Car.Use(hooks...)
+	c.Group.Use(hooks...)
 	c.User.Use(hooks...)
 }
 
 // Intercept adds the query interceptors to all the entity clients.
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
-	c.ArInternalMetadatum.Intercept(interceptors...)
-	c.SchemaMigration.Intercept(interceptors...)
-	c.Todo.Intercept(interceptors...)
-	c.TodoStatus.Intercept(interceptors...)
+	c.Car.Intercept(interceptors...)
+	c.Group.Intercept(interceptors...)
 	c.User.Intercept(interceptors...)
 }
 
 // Mutate implements the ent.Mutator interface.
 func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
-	case *ArInternalMetadatumMutation:
-		return c.ArInternalMetadatum.mutate(ctx, m)
-	case *SchemaMigrationMutation:
-		return c.SchemaMigration.mutate(ctx, m)
-	case *TodoMutation:
-		return c.Todo.mutate(ctx, m)
-	case *TodoStatusMutation:
-		return c.TodoStatus.mutate(ctx, m)
+	case *CarMutation:
+		return c.Car.mutate(ctx, m)
+	case *GroupMutation:
+		return c.Group.mutate(ctx, m)
 	case *UserMutation:
 		return c.User.mutate(ctx, m)
 	default:
@@ -229,92 +209,92 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	}
 }
 
-// ArInternalMetadatumClient is a client for the ArInternalMetadatum schema.
-type ArInternalMetadatumClient struct {
+// CarClient is a client for the Car schema.
+type CarClient struct {
 	config
 }
 
-// NewArInternalMetadatumClient returns a client for the ArInternalMetadatum from the given config.
-func NewArInternalMetadatumClient(c config) *ArInternalMetadatumClient {
-	return &ArInternalMetadatumClient{config: c}
+// NewCarClient returns a client for the Car from the given config.
+func NewCarClient(c config) *CarClient {
+	return &CarClient{config: c}
 }
 
 // Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `arinternalmetadatum.Hooks(f(g(h())))`.
-func (c *ArInternalMetadatumClient) Use(hooks ...Hook) {
-	c.hooks.ArInternalMetadatum = append(c.hooks.ArInternalMetadatum, hooks...)
+// A call to `Use(f, g, h)` equals to `car.Hooks(f(g(h())))`.
+func (c *CarClient) Use(hooks ...Hook) {
+	c.hooks.Car = append(c.hooks.Car, hooks...)
 }
 
 // Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `arinternalmetadatum.Intercept(f(g(h())))`.
-func (c *ArInternalMetadatumClient) Intercept(interceptors ...Interceptor) {
-	c.inters.ArInternalMetadatum = append(c.inters.ArInternalMetadatum, interceptors...)
+// A call to `Intercept(f, g, h)` equals to `car.Intercept(f(g(h())))`.
+func (c *CarClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Car = append(c.inters.Car, interceptors...)
 }
 
-// Create returns a builder for creating a ArInternalMetadatum entity.
-func (c *ArInternalMetadatumClient) Create() *ArInternalMetadatumCreate {
-	mutation := newArInternalMetadatumMutation(c.config, OpCreate)
-	return &ArInternalMetadatumCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Create returns a builder for creating a Car entity.
+func (c *CarClient) Create() *CarCreate {
+	mutation := newCarMutation(c.config, OpCreate)
+	return &CarCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// CreateBulk returns a builder for creating a bulk of ArInternalMetadatum entities.
-func (c *ArInternalMetadatumClient) CreateBulk(builders ...*ArInternalMetadatumCreate) *ArInternalMetadatumCreateBulk {
-	return &ArInternalMetadatumCreateBulk{config: c.config, builders: builders}
+// CreateBulk returns a builder for creating a bulk of Car entities.
+func (c *CarClient) CreateBulk(builders ...*CarCreate) *CarCreateBulk {
+	return &CarCreateBulk{config: c.config, builders: builders}
 }
 
-// Update returns an update builder for ArInternalMetadatum.
-func (c *ArInternalMetadatumClient) Update() *ArInternalMetadatumUpdate {
-	mutation := newArInternalMetadatumMutation(c.config, OpUpdate)
-	return &ArInternalMetadatumUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Update returns an update builder for Car.
+func (c *CarClient) Update() *CarUpdate {
+	mutation := newCarMutation(c.config, OpUpdate)
+	return &CarUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *ArInternalMetadatumClient) UpdateOne(aim *ArInternalMetadatum) *ArInternalMetadatumUpdateOne {
-	mutation := newArInternalMetadatumMutation(c.config, OpUpdateOne, withArInternalMetadatum(aim))
-	return &ArInternalMetadatumUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+func (c *CarClient) UpdateOne(ca *Car) *CarUpdateOne {
+	mutation := newCarMutation(c.config, OpUpdateOne, withCar(ca))
+	return &CarUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *ArInternalMetadatumClient) UpdateOneID(id string) *ArInternalMetadatumUpdateOne {
-	mutation := newArInternalMetadatumMutation(c.config, OpUpdateOne, withArInternalMetadatumID(id))
-	return &ArInternalMetadatumUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+func (c *CarClient) UpdateOneID(id int) *CarUpdateOne {
+	mutation := newCarMutation(c.config, OpUpdateOne, withCarID(id))
+	return &CarUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// Delete returns a delete builder for ArInternalMetadatum.
-func (c *ArInternalMetadatumClient) Delete() *ArInternalMetadatumDelete {
-	mutation := newArInternalMetadatumMutation(c.config, OpDelete)
-	return &ArInternalMetadatumDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Delete returns a delete builder for Car.
+func (c *CarClient) Delete() *CarDelete {
+	mutation := newCarMutation(c.config, OpDelete)
+	return &CarDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *ArInternalMetadatumClient) DeleteOne(aim *ArInternalMetadatum) *ArInternalMetadatumDeleteOne {
-	return c.DeleteOneID(aim.ID)
+func (c *CarClient) DeleteOne(ca *Car) *CarDeleteOne {
+	return c.DeleteOneID(ca.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *ArInternalMetadatumClient) DeleteOneID(id string) *ArInternalMetadatumDeleteOne {
-	builder := c.Delete().Where(arinternalmetadatum.ID(id))
+func (c *CarClient) DeleteOneID(id int) *CarDeleteOne {
+	builder := c.Delete().Where(car.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
-	return &ArInternalMetadatumDeleteOne{builder}
+	return &CarDeleteOne{builder}
 }
 
-// Query returns a query builder for ArInternalMetadatum.
-func (c *ArInternalMetadatumClient) Query() *ArInternalMetadatumQuery {
-	return &ArInternalMetadatumQuery{
+// Query returns a query builder for Car.
+func (c *CarClient) Query() *CarQuery {
+	return &CarQuery{
 		config: c.config,
-		ctx:    &QueryContext{Type: TypeArInternalMetadatum},
+		ctx:    &QueryContext{Type: TypeCar},
 		inters: c.Interceptors(),
 	}
 }
 
-// Get returns a ArInternalMetadatum entity by its id.
-func (c *ArInternalMetadatumClient) Get(ctx context.Context, id string) (*ArInternalMetadatum, error) {
-	return c.Query().Where(arinternalmetadatum.ID(id)).Only(ctx)
+// Get returns a Car entity by its id.
+func (c *CarClient) Get(ctx context.Context, id int) (*Car, error) {
+	return c.Query().Where(car.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *ArInternalMetadatumClient) GetX(ctx context.Context, id string) *ArInternalMetadatum {
+func (c *CarClient) GetX(ctx context.Context, id int) *Car {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
@@ -322,385 +302,133 @@ func (c *ArInternalMetadatumClient) GetX(ctx context.Context, id string) *ArInte
 	return obj
 }
 
-// Hooks returns the client hooks.
-func (c *ArInternalMetadatumClient) Hooks() []Hook {
-	return c.hooks.ArInternalMetadatum
-}
-
-// Interceptors returns the client interceptors.
-func (c *ArInternalMetadatumClient) Interceptors() []Interceptor {
-	return c.inters.ArInternalMetadatum
-}
-
-func (c *ArInternalMetadatumClient) mutate(ctx context.Context, m *ArInternalMetadatumMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&ArInternalMetadatumCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&ArInternalMetadatumUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&ArInternalMetadatumUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&ArInternalMetadatumDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown ArInternalMetadatum mutation op: %q", m.Op())
-	}
-}
-
-// SchemaMigrationClient is a client for the SchemaMigration schema.
-type SchemaMigrationClient struct {
-	config
-}
-
-// NewSchemaMigrationClient returns a client for the SchemaMigration from the given config.
-func NewSchemaMigrationClient(c config) *SchemaMigrationClient {
-	return &SchemaMigrationClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `schemamigration.Hooks(f(g(h())))`.
-func (c *SchemaMigrationClient) Use(hooks ...Hook) {
-	c.hooks.SchemaMigration = append(c.hooks.SchemaMigration, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `schemamigration.Intercept(f(g(h())))`.
-func (c *SchemaMigrationClient) Intercept(interceptors ...Interceptor) {
-	c.inters.SchemaMigration = append(c.inters.SchemaMigration, interceptors...)
-}
-
-// Create returns a builder for creating a SchemaMigration entity.
-func (c *SchemaMigrationClient) Create() *SchemaMigrationCreate {
-	mutation := newSchemaMigrationMutation(c.config, OpCreate)
-	return &SchemaMigrationCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of SchemaMigration entities.
-func (c *SchemaMigrationClient) CreateBulk(builders ...*SchemaMigrationCreate) *SchemaMigrationCreateBulk {
-	return &SchemaMigrationCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for SchemaMigration.
-func (c *SchemaMigrationClient) Update() *SchemaMigrationUpdate {
-	mutation := newSchemaMigrationMutation(c.config, OpUpdate)
-	return &SchemaMigrationUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *SchemaMigrationClient) UpdateOne(sm *SchemaMigration) *SchemaMigrationUpdateOne {
-	mutation := newSchemaMigrationMutation(c.config, OpUpdateOne, withSchemaMigration(sm))
-	return &SchemaMigrationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *SchemaMigrationClient) UpdateOneID(id string) *SchemaMigrationUpdateOne {
-	mutation := newSchemaMigrationMutation(c.config, OpUpdateOne, withSchemaMigrationID(id))
-	return &SchemaMigrationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for SchemaMigration.
-func (c *SchemaMigrationClient) Delete() *SchemaMigrationDelete {
-	mutation := newSchemaMigrationMutation(c.config, OpDelete)
-	return &SchemaMigrationDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *SchemaMigrationClient) DeleteOne(sm *SchemaMigration) *SchemaMigrationDeleteOne {
-	return c.DeleteOneID(sm.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *SchemaMigrationClient) DeleteOneID(id string) *SchemaMigrationDeleteOne {
-	builder := c.Delete().Where(schemamigration.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &SchemaMigrationDeleteOne{builder}
-}
-
-// Query returns a query builder for SchemaMigration.
-func (c *SchemaMigrationClient) Query() *SchemaMigrationQuery {
-	return &SchemaMigrationQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeSchemaMigration},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a SchemaMigration entity by its id.
-func (c *SchemaMigrationClient) Get(ctx context.Context, id string) (*SchemaMigration, error) {
-	return c.Query().Where(schemamigration.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *SchemaMigrationClient) GetX(ctx context.Context, id string) *SchemaMigration {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// Hooks returns the client hooks.
-func (c *SchemaMigrationClient) Hooks() []Hook {
-	return c.hooks.SchemaMigration
-}
-
-// Interceptors returns the client interceptors.
-func (c *SchemaMigrationClient) Interceptors() []Interceptor {
-	return c.inters.SchemaMigration
-}
-
-func (c *SchemaMigrationClient) mutate(ctx context.Context, m *SchemaMigrationMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&SchemaMigrationCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&SchemaMigrationUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&SchemaMigrationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&SchemaMigrationDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown SchemaMigration mutation op: %q", m.Op())
-	}
-}
-
-// TodoClient is a client for the Todo schema.
-type TodoClient struct {
-	config
-}
-
-// NewTodoClient returns a client for the Todo from the given config.
-func NewTodoClient(c config) *TodoClient {
-	return &TodoClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `todo.Hooks(f(g(h())))`.
-func (c *TodoClient) Use(hooks ...Hook) {
-	c.hooks.Todo = append(c.hooks.Todo, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `todo.Intercept(f(g(h())))`.
-func (c *TodoClient) Intercept(interceptors ...Interceptor) {
-	c.inters.Todo = append(c.inters.Todo, interceptors...)
-}
-
-// Create returns a builder for creating a Todo entity.
-func (c *TodoClient) Create() *TodoCreate {
-	mutation := newTodoMutation(c.config, OpCreate)
-	return &TodoCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of Todo entities.
-func (c *TodoClient) CreateBulk(builders ...*TodoCreate) *TodoCreateBulk {
-	return &TodoCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for Todo.
-func (c *TodoClient) Update() *TodoUpdate {
-	mutation := newTodoMutation(c.config, OpUpdate)
-	return &TodoUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *TodoClient) UpdateOne(t *Todo) *TodoUpdateOne {
-	mutation := newTodoMutation(c.config, OpUpdateOne, withTodo(t))
-	return &TodoUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *TodoClient) UpdateOneID(id int) *TodoUpdateOne {
-	mutation := newTodoMutation(c.config, OpUpdateOne, withTodoID(id))
-	return &TodoUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for Todo.
-func (c *TodoClient) Delete() *TodoDelete {
-	mutation := newTodoMutation(c.config, OpDelete)
-	return &TodoDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *TodoClient) DeleteOne(t *Todo) *TodoDeleteOne {
-	return c.DeleteOneID(t.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *TodoClient) DeleteOneID(id int) *TodoDeleteOne {
-	builder := c.Delete().Where(todo.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &TodoDeleteOne{builder}
-}
-
-// Query returns a query builder for Todo.
-func (c *TodoClient) Query() *TodoQuery {
-	return &TodoQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeTodo},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a Todo entity by its id.
-func (c *TodoClient) Get(ctx context.Context, id int) (*Todo, error) {
-	return c.Query().Where(todo.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *TodoClient) GetX(ctx context.Context, id int) *Todo {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryTodoStatu queries the todo_statu edge of a Todo.
-func (c *TodoClient) QueryTodoStatu(t *Todo) *TodoStatusQuery {
-	query := (&TodoStatusClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := t.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(todo.Table, todo.FieldID, id),
-			sqlgraph.To(todostatus.Table, todostatus.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, todo.TodoStatuTable, todo.TodoStatuColumn),
-		)
-		fromV = sqlgraph.Neighbors(t.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryUser queries the user edge of a Todo.
-func (c *TodoClient) QueryUser(t *Todo) *UserQuery {
+// QueryOwner queries the owner edge of a Car.
+func (c *CarClient) QueryOwner(ca *Car) *UserQuery {
 	query := (&UserClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := t.ID
+		id := ca.ID
 		step := sqlgraph.NewStep(
-			sqlgraph.From(todo.Table, todo.FieldID, id),
+			sqlgraph.From(car.Table, car.FieldID, id),
 			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, todo.UserTable, todo.UserColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, car.OwnerTable, car.OwnerColumn),
 		)
-		fromV = sqlgraph.Neighbors(t.driver.Dialect(), step)
+		fromV = sqlgraph.Neighbors(ca.driver.Dialect(), step)
 		return fromV, nil
 	}
 	return query
 }
 
 // Hooks returns the client hooks.
-func (c *TodoClient) Hooks() []Hook {
-	return c.hooks.Todo
+func (c *CarClient) Hooks() []Hook {
+	return c.hooks.Car
 }
 
 // Interceptors returns the client interceptors.
-func (c *TodoClient) Interceptors() []Interceptor {
-	return c.inters.Todo
+func (c *CarClient) Interceptors() []Interceptor {
+	return c.inters.Car
 }
 
-func (c *TodoClient) mutate(ctx context.Context, m *TodoMutation) (Value, error) {
+func (c *CarClient) mutate(ctx context.Context, m *CarMutation) (Value, error) {
 	switch m.Op() {
 	case OpCreate:
-		return (&TodoCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&CarCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpUpdate:
-		return (&TodoUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&CarUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpUpdateOne:
-		return (&TodoUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&CarUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpDelete, OpDeleteOne:
-		return (&TodoDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+		return (&CarDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
-		return nil, fmt.Errorf("ent: unknown Todo mutation op: %q", m.Op())
+		return nil, fmt.Errorf("ent: unknown Car mutation op: %q", m.Op())
 	}
 }
 
-// TodoStatusClient is a client for the TodoStatus schema.
-type TodoStatusClient struct {
+// GroupClient is a client for the Group schema.
+type GroupClient struct {
 	config
 }
 
-// NewTodoStatusClient returns a client for the TodoStatus from the given config.
-func NewTodoStatusClient(c config) *TodoStatusClient {
-	return &TodoStatusClient{config: c}
+// NewGroupClient returns a client for the Group from the given config.
+func NewGroupClient(c config) *GroupClient {
+	return &GroupClient{config: c}
 }
 
 // Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `todostatus.Hooks(f(g(h())))`.
-func (c *TodoStatusClient) Use(hooks ...Hook) {
-	c.hooks.TodoStatus = append(c.hooks.TodoStatus, hooks...)
+// A call to `Use(f, g, h)` equals to `group.Hooks(f(g(h())))`.
+func (c *GroupClient) Use(hooks ...Hook) {
+	c.hooks.Group = append(c.hooks.Group, hooks...)
 }
 
 // Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `todostatus.Intercept(f(g(h())))`.
-func (c *TodoStatusClient) Intercept(interceptors ...Interceptor) {
-	c.inters.TodoStatus = append(c.inters.TodoStatus, interceptors...)
+// A call to `Intercept(f, g, h)` equals to `group.Intercept(f(g(h())))`.
+func (c *GroupClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Group = append(c.inters.Group, interceptors...)
 }
 
-// Create returns a builder for creating a TodoStatus entity.
-func (c *TodoStatusClient) Create() *TodoStatusCreate {
-	mutation := newTodoStatusMutation(c.config, OpCreate)
-	return &TodoStatusCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Create returns a builder for creating a Group entity.
+func (c *GroupClient) Create() *GroupCreate {
+	mutation := newGroupMutation(c.config, OpCreate)
+	return &GroupCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// CreateBulk returns a builder for creating a bulk of TodoStatus entities.
-func (c *TodoStatusClient) CreateBulk(builders ...*TodoStatusCreate) *TodoStatusCreateBulk {
-	return &TodoStatusCreateBulk{config: c.config, builders: builders}
+// CreateBulk returns a builder for creating a bulk of Group entities.
+func (c *GroupClient) CreateBulk(builders ...*GroupCreate) *GroupCreateBulk {
+	return &GroupCreateBulk{config: c.config, builders: builders}
 }
 
-// Update returns an update builder for TodoStatus.
-func (c *TodoStatusClient) Update() *TodoStatusUpdate {
-	mutation := newTodoStatusMutation(c.config, OpUpdate)
-	return &TodoStatusUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Update returns an update builder for Group.
+func (c *GroupClient) Update() *GroupUpdate {
+	mutation := newGroupMutation(c.config, OpUpdate)
+	return &GroupUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *TodoStatusClient) UpdateOne(ts *TodoStatus) *TodoStatusUpdateOne {
-	mutation := newTodoStatusMutation(c.config, OpUpdateOne, withTodoStatus(ts))
-	return &TodoStatusUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+func (c *GroupClient) UpdateOne(gr *Group) *GroupUpdateOne {
+	mutation := newGroupMutation(c.config, OpUpdateOne, withGroup(gr))
+	return &GroupUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *TodoStatusClient) UpdateOneID(id int) *TodoStatusUpdateOne {
-	mutation := newTodoStatusMutation(c.config, OpUpdateOne, withTodoStatusID(id))
-	return &TodoStatusUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+func (c *GroupClient) UpdateOneID(id int) *GroupUpdateOne {
+	mutation := newGroupMutation(c.config, OpUpdateOne, withGroupID(id))
+	return &GroupUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// Delete returns a delete builder for TodoStatus.
-func (c *TodoStatusClient) Delete() *TodoStatusDelete {
-	mutation := newTodoStatusMutation(c.config, OpDelete)
-	return &TodoStatusDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Delete returns a delete builder for Group.
+func (c *GroupClient) Delete() *GroupDelete {
+	mutation := newGroupMutation(c.config, OpDelete)
+	return &GroupDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *TodoStatusClient) DeleteOne(ts *TodoStatus) *TodoStatusDeleteOne {
-	return c.DeleteOneID(ts.ID)
+func (c *GroupClient) DeleteOne(gr *Group) *GroupDeleteOne {
+	return c.DeleteOneID(gr.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *TodoStatusClient) DeleteOneID(id int) *TodoStatusDeleteOne {
-	builder := c.Delete().Where(todostatus.ID(id))
+func (c *GroupClient) DeleteOneID(id int) *GroupDeleteOne {
+	builder := c.Delete().Where(group.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
-	return &TodoStatusDeleteOne{builder}
+	return &GroupDeleteOne{builder}
 }
 
-// Query returns a query builder for TodoStatus.
-func (c *TodoStatusClient) Query() *TodoStatusQuery {
-	return &TodoStatusQuery{
+// Query returns a query builder for Group.
+func (c *GroupClient) Query() *GroupQuery {
+	return &GroupQuery{
 		config: c.config,
-		ctx:    &QueryContext{Type: TypeTodoStatus},
+		ctx:    &QueryContext{Type: TypeGroup},
 		inters: c.Interceptors(),
 	}
 }
 
-// Get returns a TodoStatus entity by its id.
-func (c *TodoStatusClient) Get(ctx context.Context, id int) (*TodoStatus, error) {
-	return c.Query().Where(todostatus.ID(id)).Only(ctx)
+// Get returns a Group entity by its id.
+func (c *GroupClient) Get(ctx context.Context, id int) (*Group, error) {
+	return c.Query().Where(group.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *TodoStatusClient) GetX(ctx context.Context, id int) *TodoStatus {
+func (c *GroupClient) GetX(ctx context.Context, id int) *Group {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
@@ -708,44 +436,28 @@ func (c *TodoStatusClient) GetX(ctx context.Context, id int) *TodoStatus {
 	return obj
 }
 
-// QueryTodos queries the todos edge of a TodoStatus.
-func (c *TodoStatusClient) QueryTodos(ts *TodoStatus) *TodoQuery {
-	query := (&TodoClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := ts.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(todostatus.Table, todostatus.FieldID, id),
-			sqlgraph.To(todo.Table, todo.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, todostatus.TodosTable, todostatus.TodosColumn),
-		)
-		fromV = sqlgraph.Neighbors(ts.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // Hooks returns the client hooks.
-func (c *TodoStatusClient) Hooks() []Hook {
-	return c.hooks.TodoStatus
+func (c *GroupClient) Hooks() []Hook {
+	return c.hooks.Group
 }
 
 // Interceptors returns the client interceptors.
-func (c *TodoStatusClient) Interceptors() []Interceptor {
-	return c.inters.TodoStatus
+func (c *GroupClient) Interceptors() []Interceptor {
+	return c.inters.Group
 }
 
-func (c *TodoStatusClient) mutate(ctx context.Context, m *TodoStatusMutation) (Value, error) {
+func (c *GroupClient) mutate(ctx context.Context, m *GroupMutation) (Value, error) {
 	switch m.Op() {
 	case OpCreate:
-		return (&TodoStatusCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&GroupCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpUpdate:
-		return (&TodoStatusUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&GroupUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpUpdateOne:
-		return (&TodoStatusUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&GroupUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpDelete, OpDeleteOne:
-		return (&TodoStatusDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+		return (&GroupDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
-		return nil, fmt.Errorf("ent: unknown TodoStatus mutation op: %q", m.Op())
+		return nil, fmt.Errorf("ent: unknown Group mutation op: %q", m.Op())
 	}
 }
 
@@ -842,15 +554,15 @@ func (c *UserClient) GetX(ctx context.Context, id int) *User {
 	return obj
 }
 
-// QueryTodos queries the todos edge of a User.
-func (c *UserClient) QueryTodos(u *User) *TodoQuery {
-	query := (&TodoClient{config: c.config}).Query()
+// QueryCars queries the cars edge of a User.
+func (c *UserClient) QueryCars(u *User) *CarQuery {
+	query := (&CarClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := u.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, id),
-			sqlgraph.To(todo.Table, todo.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, user.TodosTable, user.TodosColumn),
+			sqlgraph.To(car.Table, car.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.CarsTable, user.CarsColumn),
 		)
 		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
 		return fromV, nil
@@ -886,9 +598,9 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		ArInternalMetadatum, SchemaMigration, Todo, TodoStatus, User []ent.Hook
+		Car, Group, User []ent.Hook
 	}
 	inters struct {
-		ArInternalMetadatum, SchemaMigration, Todo, TodoStatus, User []ent.Interceptor
+		Car, Group, User []ent.Interceptor
 	}
 )

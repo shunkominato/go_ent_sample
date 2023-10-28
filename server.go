@@ -1,22 +1,13 @@
 package main
 
 import (
-	"log"
-	"net/http"
-	"os"
-
 	"go-gql-sample/app/ent"
-	Dataloader "go-gql-sample/app/internal/dataloader"
 	"go-gql-sample/app/internal/infrastructure/server/graph"
 	"go-gql-sample/app/internal/infrastructure/server/graph/resolver"
-	"go-gql-sample/app/pkg/config"
-	"go-gql-sample/app/pkg/db"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 )
 
 const defaultPort = "8080"
@@ -40,34 +31,34 @@ func playgroundHandler() gin.HandlerFunc {
 	}
 }
 
-func main() {
-	godotenv.Load(".env")
+// func main() {
+// 	godotenv.Load(".env")
 
-	config.SetConfig()
+// 	config.SetConfig()
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = defaultPort
-	}
+// 	port := os.Getenv("PORT")
+// 	if port == "" {
+// 		port = defaultPort
+// 	}
 
-	r := gin.Default()
+// 	r := gin.Default()
 
-	db, _ := db.NewDatabase()	
-	client := db.EntClient()
-	defer db.Close()
+// 	db, _ := db.NewDatabase()	
+// 	client := db.EntClient()
+// 	defer db.Close()
 
-	loaders := Dataloader.NewLoaders(client)
-	r.Use(Dataloader.Middleware(loaders))
+// 	loaders := Dataloader.NewLoaders(client)
+// 	r.Use(Dataloader.Middleware(loaders))
 
-	config := cors.DefaultConfig()
-	config.AllowAllOrigins = true
-	r.Use(cors.New(config))
+// 	config := cors.DefaultConfig()
+// 	config.AllowAllOrigins = true
+// 	r.Use(cors.New(config))
 
-	r.POST("/query", graphqlHandler(client))
-	r.GET("/", playgroundHandler())
+// 	r.POST("/query", graphqlHandler(client))
+// 	r.GET("/", playgroundHandler())
 
-	r.Run()
+// 	r.Run()
 
-	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
-}
+// 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
+// 	log.Fatal(http.ListenAndServe(":"+port, nil))
+// }

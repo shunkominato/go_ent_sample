@@ -8,52 +8,28 @@ import (
 	"go-gql-sample/app/ent"
 )
 
-// The ArInternalMetadatumFunc type is an adapter to allow the use of ordinary
-// function as ArInternalMetadatum mutator.
-type ArInternalMetadatumFunc func(context.Context, *ent.ArInternalMetadatumMutation) (ent.Value, error)
+// The CarFunc type is an adapter to allow the use of ordinary
+// function as Car mutator.
+type CarFunc func(context.Context, *ent.CarMutation) (ent.Value, error)
 
 // Mutate calls f(ctx, m).
-func (f ArInternalMetadatumFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.ArInternalMetadatumMutation); ok {
+func (f CarFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CarMutation); ok {
 		return f(ctx, mv)
 	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ArInternalMetadatumMutation", m)
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CarMutation", m)
 }
 
-// The SchemaMigrationFunc type is an adapter to allow the use of ordinary
-// function as SchemaMigration mutator.
-type SchemaMigrationFunc func(context.Context, *ent.SchemaMigrationMutation) (ent.Value, error)
+// The GroupFunc type is an adapter to allow the use of ordinary
+// function as Group mutator.
+type GroupFunc func(context.Context, *ent.GroupMutation) (ent.Value, error)
 
 // Mutate calls f(ctx, m).
-func (f SchemaMigrationFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.SchemaMigrationMutation); ok {
+func (f GroupFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.GroupMutation); ok {
 		return f(ctx, mv)
 	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.SchemaMigrationMutation", m)
-}
-
-// The TodoFunc type is an adapter to allow the use of ordinary
-// function as Todo mutator.
-type TodoFunc func(context.Context, *ent.TodoMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f TodoFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.TodoMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.TodoMutation", m)
-}
-
-// The TodoStatusFunc type is an adapter to allow the use of ordinary
-// function as TodoStatus mutator.
-type TodoStatusFunc func(context.Context, *ent.TodoStatusMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f TodoStatusFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.TodoStatusMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.TodoStatusMutation", m)
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GroupMutation", m)
 }
 
 // The UserFunc type is an adapter to allow the use of ordinary

@@ -6,17 +6,11 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
-// ArInternalMetadatum is the predicate function for arinternalmetadatum builders.
-type ArInternalMetadatum func(*sql.Selector)
+// Car is the predicate function for car builders.
+type Car func(*sql.Selector)
 
-// SchemaMigration is the predicate function for schemamigration builders.
-type SchemaMigration func(*sql.Selector)
-
-// Todo is the predicate function for todo builders.
-type Todo func(*sql.Selector)
-
-// TodoStatus is the predicate function for todostatus builders.
-type TodoStatus func(*sql.Selector)
+// Group is the predicate function for group builders.
+type Group func(*sql.Selector)
 
 // User is the predicate function for user builders.
 type User func(*sql.Selector)

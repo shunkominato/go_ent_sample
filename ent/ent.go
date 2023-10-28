@@ -6,10 +6,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go-gql-sample/app/ent/arinternalmetadatum"
-	"go-gql-sample/app/ent/schemamigration"
-	"go-gql-sample/app/ent/todo"
-	"go-gql-sample/app/ent/todostatus"
+	"go-gql-sample/app/ent/car"
+	"go-gql-sample/app/ent/group"
 	"go-gql-sample/app/ent/user"
 	"reflect"
 
@@ -69,11 +67,9 @@ type OrderFunc func(*sql.Selector)
 // columnChecker returns a function indicates if the column exists in the given column.
 func columnChecker(table string) func(string) error {
 	checks := map[string]func(string) bool{
-		arinternalmetadatum.Table: arinternalmetadatum.ValidColumn,
-		schemamigration.Table:     schemamigration.ValidColumn,
-		todo.Table:                todo.ValidColumn,
-		todostatus.Table:          todostatus.ValidColumn,
-		user.Table:                user.ValidColumn,
+		car.Table:   car.ValidColumn,
+		group.Table: group.ValidColumn,
+		user.Table:  user.ValidColumn,
 	}
 	check, ok := checks[table]
 	if !ok {

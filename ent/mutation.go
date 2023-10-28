@@ -6,10 +6,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go-gql-sample/app/ent/arinternalmetadatum"
+	"go-gql-sample/app/ent/car"
+	"go-gql-sample/app/ent/group"
 	"go-gql-sample/app/ent/predicate"
-	"go-gql-sample/app/ent/todo"
-	"go-gql-sample/app/ent/todostatus"
 	"go-gql-sample/app/ent/user"
 	"sync"
 	"time"
@@ -27,1477 +26,38 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeArInternalMetadatum = "ArInternalMetadatum"
-	TypeSchemaMigration     = "SchemaMigration"
-	TypeTodo                = "Todo"
-	TypeTodoStatus          = "TodoStatus"
-	TypeUser                = "User"
+	TypeCar   = "Car"
+	TypeGroup = "Group"
+	TypeUser  = "User"
 )
 
-// ArInternalMetadatumMutation represents an operation that mutates the ArInternalMetadatum nodes in the graph.
-type ArInternalMetadatumMutation struct {
-	config
-	op            Op
-	typ           string
-	id            *string
-	value         *string
-	created_at    *time.Time
-	updated_at    *time.Time
-	clearedFields map[string]struct{}
-	done          bool
-	oldValue      func(context.Context) (*ArInternalMetadatum, error)
-	predicates    []predicate.ArInternalMetadatum
-}
-
-var _ ent.Mutation = (*ArInternalMetadatumMutation)(nil)
-
-// arinternalmetadatumOption allows management of the mutation configuration using functional options.
-type arinternalmetadatumOption func(*ArInternalMetadatumMutation)
-
-// newArInternalMetadatumMutation creates new mutation for the ArInternalMetadatum entity.
-func newArInternalMetadatumMutation(c config, op Op, opts ...arinternalmetadatumOption) *ArInternalMetadatumMutation {
-	m := &ArInternalMetadatumMutation{
-		config:        c,
-		op:            op,
-		typ:           TypeArInternalMetadatum,
-		clearedFields: make(map[string]struct{}),
-	}
-	for _, opt := range opts {
-		opt(m)
-	}
-	return m
-}
-
-// withArInternalMetadatumID sets the ID field of the mutation.
-func withArInternalMetadatumID(id string) arinternalmetadatumOption {
-	return func(m *ArInternalMetadatumMutation) {
-		var (
-			err   error
-			once  sync.Once
-			value *ArInternalMetadatum
-		)
-		m.oldValue = func(ctx context.Context) (*ArInternalMetadatum, error) {
-			once.Do(func() {
-				if m.done {
-					err = errors.New("querying old values post mutation is not allowed")
-				} else {
-					value, err = m.Client().ArInternalMetadatum.Get(ctx, id)
-				}
-			})
-			return value, err
-		}
-		m.id = &id
-	}
-}
-
-// withArInternalMetadatum sets the old ArInternalMetadatum of the mutation.
-func withArInternalMetadatum(node *ArInternalMetadatum) arinternalmetadatumOption {
-	return func(m *ArInternalMetadatumMutation) {
-		m.oldValue = func(context.Context) (*ArInternalMetadatum, error) {
-			return node, nil
-		}
-		m.id = &node.ID
-	}
-}
-
-// Client returns a new `ent.Client` from the mutation. If the mutation was
-// executed in a transaction (ent.Tx), a transactional client is returned.
-func (m ArInternalMetadatumMutation) Client() *Client {
-	client := &Client{config: m.config}
-	client.init()
-	return client
-}
-
-// Tx returns an `ent.Tx` for mutations that were executed in transactions;
-// it returns an error otherwise.
-func (m ArInternalMetadatumMutation) Tx() (*Tx, error) {
-	if _, ok := m.driver.(*txDriver); !ok {
-		return nil, errors.New("ent: mutation is not running in a transaction")
-	}
-	tx := &Tx{config: m.config}
-	tx.init()
-	return tx, nil
-}
-
-// SetID sets the value of the id field. Note that this
-// operation is only accepted on creation of ArInternalMetadatum entities.
-func (m *ArInternalMetadatumMutation) SetID(id string) {
-	m.id = &id
-}
-
-// ID returns the ID value in the mutation. Note that the ID is only available
-// if it was provided to the builder or after it was returned from the database.
-func (m *ArInternalMetadatumMutation) ID() (id string, exists bool) {
-	if m.id == nil {
-		return
-	}
-	return *m.id, true
-}
-
-// IDs queries the database and returns the entity ids that match the mutation's predicate.
-// That means, if the mutation is applied within a transaction with an isolation level such
-// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
-// or updated by the mutation.
-func (m *ArInternalMetadatumMutation) IDs(ctx context.Context) ([]string, error) {
-	switch {
-	case m.op.Is(OpUpdateOne | OpDeleteOne):
-		id, exists := m.ID()
-		if exists {
-			return []string{id}, nil
-		}
-		fallthrough
-	case m.op.Is(OpUpdate | OpDelete):
-		return m.Client().ArInternalMetadatum.Query().Where(m.predicates...).IDs(ctx)
-	default:
-		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
-	}
-}
-
-// SetValue sets the "value" field.
-func (m *ArInternalMetadatumMutation) SetValue(s string) {
-	m.value = &s
-}
-
-// Value returns the value of the "value" field in the mutation.
-func (m *ArInternalMetadatumMutation) Value() (r string, exists bool) {
-	v := m.value
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldValue returns the old "value" field's value of the ArInternalMetadatum entity.
-// If the ArInternalMetadatum object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ArInternalMetadatumMutation) OldValue(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldValue is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldValue requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldValue: %w", err)
-	}
-	return oldValue.Value, nil
-}
-
-// ClearValue clears the value of the "value" field.
-func (m *ArInternalMetadatumMutation) ClearValue() {
-	m.value = nil
-	m.clearedFields[arinternalmetadatum.FieldValue] = struct{}{}
-}
-
-// ValueCleared returns if the "value" field was cleared in this mutation.
-func (m *ArInternalMetadatumMutation) ValueCleared() bool {
-	_, ok := m.clearedFields[arinternalmetadatum.FieldValue]
-	return ok
-}
-
-// ResetValue resets all changes to the "value" field.
-func (m *ArInternalMetadatumMutation) ResetValue() {
-	m.value = nil
-	delete(m.clearedFields, arinternalmetadatum.FieldValue)
-}
-
-// SetCreatedAt sets the "created_at" field.
-func (m *ArInternalMetadatumMutation) SetCreatedAt(t time.Time) {
-	m.created_at = &t
-}
-
-// CreatedAt returns the value of the "created_at" field in the mutation.
-func (m *ArInternalMetadatumMutation) CreatedAt() (r time.Time, exists bool) {
-	v := m.created_at
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldCreatedAt returns the old "created_at" field's value of the ArInternalMetadatum entity.
-// If the ArInternalMetadatum object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ArInternalMetadatumMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
-	}
-	return oldValue.CreatedAt, nil
-}
-
-// ResetCreatedAt resets all changes to the "created_at" field.
-func (m *ArInternalMetadatumMutation) ResetCreatedAt() {
-	m.created_at = nil
-}
-
-// SetUpdatedAt sets the "updated_at" field.
-func (m *ArInternalMetadatumMutation) SetUpdatedAt(t time.Time) {
-	m.updated_at = &t
-}
-
-// UpdatedAt returns the value of the "updated_at" field in the mutation.
-func (m *ArInternalMetadatumMutation) UpdatedAt() (r time.Time, exists bool) {
-	v := m.updated_at
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldUpdatedAt returns the old "updated_at" field's value of the ArInternalMetadatum entity.
-// If the ArInternalMetadatum object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ArInternalMetadatumMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
-	}
-	return oldValue.UpdatedAt, nil
-}
-
-// ResetUpdatedAt resets all changes to the "updated_at" field.
-func (m *ArInternalMetadatumMutation) ResetUpdatedAt() {
-	m.updated_at = nil
-}
-
-// Where appends a list predicates to the ArInternalMetadatumMutation builder.
-func (m *ArInternalMetadatumMutation) Where(ps ...predicate.ArInternalMetadatum) {
-	m.predicates = append(m.predicates, ps...)
-}
-
-// WhereP appends storage-level predicates to the ArInternalMetadatumMutation builder. Using this method,
-// users can use type-assertion to append predicates that do not depend on any generated package.
-func (m *ArInternalMetadatumMutation) WhereP(ps ...func(*sql.Selector)) {
-	p := make([]predicate.ArInternalMetadatum, len(ps))
-	for i := range ps {
-		p[i] = ps[i]
-	}
-	m.Where(p...)
-}
-
-// Op returns the operation name.
-func (m *ArInternalMetadatumMutation) Op() Op {
-	return m.op
-}
-
-// SetOp allows setting the mutation operation.
-func (m *ArInternalMetadatumMutation) SetOp(op Op) {
-	m.op = op
-}
-
-// Type returns the node type of this mutation (ArInternalMetadatum).
-func (m *ArInternalMetadatumMutation) Type() string {
-	return m.typ
-}
-
-// Fields returns all fields that were changed during this mutation. Note that in
-// order to get all numeric fields that were incremented/decremented, call
-// AddedFields().
-func (m *ArInternalMetadatumMutation) Fields() []string {
-	fields := make([]string, 0, 3)
-	if m.value != nil {
-		fields = append(fields, arinternalmetadatum.FieldValue)
-	}
-	if m.created_at != nil {
-		fields = append(fields, arinternalmetadatum.FieldCreatedAt)
-	}
-	if m.updated_at != nil {
-		fields = append(fields, arinternalmetadatum.FieldUpdatedAt)
-	}
-	return fields
-}
-
-// Field returns the value of a field with the given name. The second boolean
-// return value indicates that this field was not set, or was not defined in the
-// schema.
-func (m *ArInternalMetadatumMutation) Field(name string) (ent.Value, bool) {
-	switch name {
-	case arinternalmetadatum.FieldValue:
-		return m.Value()
-	case arinternalmetadatum.FieldCreatedAt:
-		return m.CreatedAt()
-	case arinternalmetadatum.FieldUpdatedAt:
-		return m.UpdatedAt()
-	}
-	return nil, false
-}
-
-// OldField returns the old value of the field from the database. An error is
-// returned if the mutation operation is not UpdateOne, or the query to the
-// database failed.
-func (m *ArInternalMetadatumMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
-	switch name {
-	case arinternalmetadatum.FieldValue:
-		return m.OldValue(ctx)
-	case arinternalmetadatum.FieldCreatedAt:
-		return m.OldCreatedAt(ctx)
-	case arinternalmetadatum.FieldUpdatedAt:
-		return m.OldUpdatedAt(ctx)
-	}
-	return nil, fmt.Errorf("unknown ArInternalMetadatum field %s", name)
-}
-
-// SetField sets the value of a field with the given name. It returns an error if
-// the field is not defined in the schema, or if the type mismatched the field
-// type.
-func (m *ArInternalMetadatumMutation) SetField(name string, value ent.Value) error {
-	switch name {
-	case arinternalmetadatum.FieldValue:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetValue(v)
-		return nil
-	case arinternalmetadatum.FieldCreatedAt:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetCreatedAt(v)
-		return nil
-	case arinternalmetadatum.FieldUpdatedAt:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetUpdatedAt(v)
-		return nil
-	}
-	return fmt.Errorf("unknown ArInternalMetadatum field %s", name)
-}
-
-// AddedFields returns all numeric fields that were incremented/decremented during
-// this mutation.
-func (m *ArInternalMetadatumMutation) AddedFields() []string {
-	return nil
-}
-
-// AddedField returns the numeric value that was incremented/decremented on a field
-// with the given name. The second boolean return value indicates that this field
-// was not set, or was not defined in the schema.
-func (m *ArInternalMetadatumMutation) AddedField(name string) (ent.Value, bool) {
-	return nil, false
-}
-
-// AddField adds the value to the field with the given name. It returns an error if
-// the field is not defined in the schema, or if the type mismatched the field
-// type.
-func (m *ArInternalMetadatumMutation) AddField(name string, value ent.Value) error {
-	switch name {
-	}
-	return fmt.Errorf("unknown ArInternalMetadatum numeric field %s", name)
-}
-
-// ClearedFields returns all nullable fields that were cleared during this
-// mutation.
-func (m *ArInternalMetadatumMutation) ClearedFields() []string {
-	var fields []string
-	if m.FieldCleared(arinternalmetadatum.FieldValue) {
-		fields = append(fields, arinternalmetadatum.FieldValue)
-	}
-	return fields
-}
-
-// FieldCleared returns a boolean indicating if a field with the given name was
-// cleared in this mutation.
-func (m *ArInternalMetadatumMutation) FieldCleared(name string) bool {
-	_, ok := m.clearedFields[name]
-	return ok
-}
-
-// ClearField clears the value of the field with the given name. It returns an
-// error if the field is not defined in the schema.
-func (m *ArInternalMetadatumMutation) ClearField(name string) error {
-	switch name {
-	case arinternalmetadatum.FieldValue:
-		m.ClearValue()
-		return nil
-	}
-	return fmt.Errorf("unknown ArInternalMetadatum nullable field %s", name)
-}
-
-// ResetField resets all changes in the mutation for the field with the given name.
-// It returns an error if the field is not defined in the schema.
-func (m *ArInternalMetadatumMutation) ResetField(name string) error {
-	switch name {
-	case arinternalmetadatum.FieldValue:
-		m.ResetValue()
-		return nil
-	case arinternalmetadatum.FieldCreatedAt:
-		m.ResetCreatedAt()
-		return nil
-	case arinternalmetadatum.FieldUpdatedAt:
-		m.ResetUpdatedAt()
-		return nil
-	}
-	return fmt.Errorf("unknown ArInternalMetadatum field %s", name)
-}
-
-// AddedEdges returns all edge names that were set/added in this mutation.
-func (m *ArInternalMetadatumMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
-	return edges
-}
-
-// AddedIDs returns all IDs (to other nodes) that were added for the given edge
-// name in this mutation.
-func (m *ArInternalMetadatumMutation) AddedIDs(name string) []ent.Value {
-	return nil
-}
-
-// RemovedEdges returns all edge names that were removed in this mutation.
-func (m *ArInternalMetadatumMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
-	return edges
-}
-
-// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
-// the given name in this mutation.
-func (m *ArInternalMetadatumMutation) RemovedIDs(name string) []ent.Value {
-	return nil
-}
-
-// ClearedEdges returns all edge names that were cleared in this mutation.
-func (m *ArInternalMetadatumMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
-	return edges
-}
-
-// EdgeCleared returns a boolean which indicates if the edge with the given name
-// was cleared in this mutation.
-func (m *ArInternalMetadatumMutation) EdgeCleared(name string) bool {
-	return false
-}
-
-// ClearEdge clears the value of the edge with the given name. It returns an error
-// if that edge is not defined in the schema.
-func (m *ArInternalMetadatumMutation) ClearEdge(name string) error {
-	return fmt.Errorf("unknown ArInternalMetadatum unique edge %s", name)
-}
-
-// ResetEdge resets all changes to the edge with the given name in this mutation.
-// It returns an error if the edge is not defined in the schema.
-func (m *ArInternalMetadatumMutation) ResetEdge(name string) error {
-	return fmt.Errorf("unknown ArInternalMetadatum edge %s", name)
-}
-
-// SchemaMigrationMutation represents an operation that mutates the SchemaMigration nodes in the graph.
-type SchemaMigrationMutation struct {
-	config
-	op            Op
-	typ           string
-	id            *string
-	clearedFields map[string]struct{}
-	done          bool
-	oldValue      func(context.Context) (*SchemaMigration, error)
-	predicates    []predicate.SchemaMigration
-}
-
-var _ ent.Mutation = (*SchemaMigrationMutation)(nil)
-
-// schemamigrationOption allows management of the mutation configuration using functional options.
-type schemamigrationOption func(*SchemaMigrationMutation)
-
-// newSchemaMigrationMutation creates new mutation for the SchemaMigration entity.
-func newSchemaMigrationMutation(c config, op Op, opts ...schemamigrationOption) *SchemaMigrationMutation {
-	m := &SchemaMigrationMutation{
-		config:        c,
-		op:            op,
-		typ:           TypeSchemaMigration,
-		clearedFields: make(map[string]struct{}),
-	}
-	for _, opt := range opts {
-		opt(m)
-	}
-	return m
-}
-
-// withSchemaMigrationID sets the ID field of the mutation.
-func withSchemaMigrationID(id string) schemamigrationOption {
-	return func(m *SchemaMigrationMutation) {
-		var (
-			err   error
-			once  sync.Once
-			value *SchemaMigration
-		)
-		m.oldValue = func(ctx context.Context) (*SchemaMigration, error) {
-			once.Do(func() {
-				if m.done {
-					err = errors.New("querying old values post mutation is not allowed")
-				} else {
-					value, err = m.Client().SchemaMigration.Get(ctx, id)
-				}
-			})
-			return value, err
-		}
-		m.id = &id
-	}
-}
-
-// withSchemaMigration sets the old SchemaMigration of the mutation.
-func withSchemaMigration(node *SchemaMigration) schemamigrationOption {
-	return func(m *SchemaMigrationMutation) {
-		m.oldValue = func(context.Context) (*SchemaMigration, error) {
-			return node, nil
-		}
-		m.id = &node.ID
-	}
-}
-
-// Client returns a new `ent.Client` from the mutation. If the mutation was
-// executed in a transaction (ent.Tx), a transactional client is returned.
-func (m SchemaMigrationMutation) Client() *Client {
-	client := &Client{config: m.config}
-	client.init()
-	return client
-}
-
-// Tx returns an `ent.Tx` for mutations that were executed in transactions;
-// it returns an error otherwise.
-func (m SchemaMigrationMutation) Tx() (*Tx, error) {
-	if _, ok := m.driver.(*txDriver); !ok {
-		return nil, errors.New("ent: mutation is not running in a transaction")
-	}
-	tx := &Tx{config: m.config}
-	tx.init()
-	return tx, nil
-}
-
-// SetID sets the value of the id field. Note that this
-// operation is only accepted on creation of SchemaMigration entities.
-func (m *SchemaMigrationMutation) SetID(id string) {
-	m.id = &id
-}
-
-// ID returns the ID value in the mutation. Note that the ID is only available
-// if it was provided to the builder or after it was returned from the database.
-func (m *SchemaMigrationMutation) ID() (id string, exists bool) {
-	if m.id == nil {
-		return
-	}
-	return *m.id, true
-}
-
-// IDs queries the database and returns the entity ids that match the mutation's predicate.
-// That means, if the mutation is applied within a transaction with an isolation level such
-// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
-// or updated by the mutation.
-func (m *SchemaMigrationMutation) IDs(ctx context.Context) ([]string, error) {
-	switch {
-	case m.op.Is(OpUpdateOne | OpDeleteOne):
-		id, exists := m.ID()
-		if exists {
-			return []string{id}, nil
-		}
-		fallthrough
-	case m.op.Is(OpUpdate | OpDelete):
-		return m.Client().SchemaMigration.Query().Where(m.predicates...).IDs(ctx)
-	default:
-		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
-	}
-}
-
-// Where appends a list predicates to the SchemaMigrationMutation builder.
-func (m *SchemaMigrationMutation) Where(ps ...predicate.SchemaMigration) {
-	m.predicates = append(m.predicates, ps...)
-}
-
-// WhereP appends storage-level predicates to the SchemaMigrationMutation builder. Using this method,
-// users can use type-assertion to append predicates that do not depend on any generated package.
-func (m *SchemaMigrationMutation) WhereP(ps ...func(*sql.Selector)) {
-	p := make([]predicate.SchemaMigration, len(ps))
-	for i := range ps {
-		p[i] = ps[i]
-	}
-	m.Where(p...)
-}
-
-// Op returns the operation name.
-func (m *SchemaMigrationMutation) Op() Op {
-	return m.op
-}
-
-// SetOp allows setting the mutation operation.
-func (m *SchemaMigrationMutation) SetOp(op Op) {
-	m.op = op
-}
-
-// Type returns the node type of this mutation (SchemaMigration).
-func (m *SchemaMigrationMutation) Type() string {
-	return m.typ
-}
-
-// Fields returns all fields that were changed during this mutation. Note that in
-// order to get all numeric fields that were incremented/decremented, call
-// AddedFields().
-func (m *SchemaMigrationMutation) Fields() []string {
-	fields := make([]string, 0, 0)
-	return fields
-}
-
-// Field returns the value of a field with the given name. The second boolean
-// return value indicates that this field was not set, or was not defined in the
-// schema.
-func (m *SchemaMigrationMutation) Field(name string) (ent.Value, bool) {
-	return nil, false
-}
-
-// OldField returns the old value of the field from the database. An error is
-// returned if the mutation operation is not UpdateOne, or the query to the
-// database failed.
-func (m *SchemaMigrationMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
-	return nil, fmt.Errorf("unknown SchemaMigration field %s", name)
-}
-
-// SetField sets the value of a field with the given name. It returns an error if
-// the field is not defined in the schema, or if the type mismatched the field
-// type.
-func (m *SchemaMigrationMutation) SetField(name string, value ent.Value) error {
-	switch name {
-	}
-	return fmt.Errorf("unknown SchemaMigration field %s", name)
-}
-
-// AddedFields returns all numeric fields that were incremented/decremented during
-// this mutation.
-func (m *SchemaMigrationMutation) AddedFields() []string {
-	return nil
-}
-
-// AddedField returns the numeric value that was incremented/decremented on a field
-// with the given name. The second boolean return value indicates that this field
-// was not set, or was not defined in the schema.
-func (m *SchemaMigrationMutation) AddedField(name string) (ent.Value, bool) {
-	return nil, false
-}
-
-// AddField adds the value to the field with the given name. It returns an error if
-// the field is not defined in the schema, or if the type mismatched the field
-// type.
-func (m *SchemaMigrationMutation) AddField(name string, value ent.Value) error {
-	return fmt.Errorf("unknown SchemaMigration numeric field %s", name)
-}
-
-// ClearedFields returns all nullable fields that were cleared during this
-// mutation.
-func (m *SchemaMigrationMutation) ClearedFields() []string {
-	return nil
-}
-
-// FieldCleared returns a boolean indicating if a field with the given name was
-// cleared in this mutation.
-func (m *SchemaMigrationMutation) FieldCleared(name string) bool {
-	_, ok := m.clearedFields[name]
-	return ok
-}
-
-// ClearField clears the value of the field with the given name. It returns an
-// error if the field is not defined in the schema.
-func (m *SchemaMigrationMutation) ClearField(name string) error {
-	return fmt.Errorf("unknown SchemaMigration nullable field %s", name)
-}
-
-// ResetField resets all changes in the mutation for the field with the given name.
-// It returns an error if the field is not defined in the schema.
-func (m *SchemaMigrationMutation) ResetField(name string) error {
-	return fmt.Errorf("unknown SchemaMigration field %s", name)
-}
-
-// AddedEdges returns all edge names that were set/added in this mutation.
-func (m *SchemaMigrationMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
-	return edges
-}
-
-// AddedIDs returns all IDs (to other nodes) that were added for the given edge
-// name in this mutation.
-func (m *SchemaMigrationMutation) AddedIDs(name string) []ent.Value {
-	return nil
-}
-
-// RemovedEdges returns all edge names that were removed in this mutation.
-func (m *SchemaMigrationMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
-	return edges
-}
-
-// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
-// the given name in this mutation.
-func (m *SchemaMigrationMutation) RemovedIDs(name string) []ent.Value {
-	return nil
-}
-
-// ClearedEdges returns all edge names that were cleared in this mutation.
-func (m *SchemaMigrationMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
-	return edges
-}
-
-// EdgeCleared returns a boolean which indicates if the edge with the given name
-// was cleared in this mutation.
-func (m *SchemaMigrationMutation) EdgeCleared(name string) bool {
-	return false
-}
-
-// ClearEdge clears the value of the edge with the given name. It returns an error
-// if that edge is not defined in the schema.
-func (m *SchemaMigrationMutation) ClearEdge(name string) error {
-	return fmt.Errorf("unknown SchemaMigration unique edge %s", name)
-}
-
-// ResetEdge resets all changes to the edge with the given name in this mutation.
-// It returns an error if the edge is not defined in the schema.
-func (m *SchemaMigrationMutation) ResetEdge(name string) error {
-	return fmt.Errorf("unknown SchemaMigration edge %s", name)
-}
-
-// TodoMutation represents an operation that mutates the Todo nodes in the graph.
-type TodoMutation struct {
-	config
-	op                Op
-	typ               string
-	id                *int
-	todo              *string
-	created_at        *time.Time
-	updated_at        *time.Time
-	clearedFields     map[string]struct{}
-	todo_statu        *int
-	clearedtodo_statu bool
-	user              *int
-	cleareduser       bool
-	done              bool
-	oldValue          func(context.Context) (*Todo, error)
-	predicates        []predicate.Todo
-}
-
-var _ ent.Mutation = (*TodoMutation)(nil)
-
-// todoOption allows management of the mutation configuration using functional options.
-type todoOption func(*TodoMutation)
-
-// newTodoMutation creates new mutation for the Todo entity.
-func newTodoMutation(c config, op Op, opts ...todoOption) *TodoMutation {
-	m := &TodoMutation{
-		config:        c,
-		op:            op,
-		typ:           TypeTodo,
-		clearedFields: make(map[string]struct{}),
-	}
-	for _, opt := range opts {
-		opt(m)
-	}
-	return m
-}
-
-// withTodoID sets the ID field of the mutation.
-func withTodoID(id int) todoOption {
-	return func(m *TodoMutation) {
-		var (
-			err   error
-			once  sync.Once
-			value *Todo
-		)
-		m.oldValue = func(ctx context.Context) (*Todo, error) {
-			once.Do(func() {
-				if m.done {
-					err = errors.New("querying old values post mutation is not allowed")
-				} else {
-					value, err = m.Client().Todo.Get(ctx, id)
-				}
-			})
-			return value, err
-		}
-		m.id = &id
-	}
-}
-
-// withTodo sets the old Todo of the mutation.
-func withTodo(node *Todo) todoOption {
-	return func(m *TodoMutation) {
-		m.oldValue = func(context.Context) (*Todo, error) {
-			return node, nil
-		}
-		m.id = &node.ID
-	}
-}
-
-// Client returns a new `ent.Client` from the mutation. If the mutation was
-// executed in a transaction (ent.Tx), a transactional client is returned.
-func (m TodoMutation) Client() *Client {
-	client := &Client{config: m.config}
-	client.init()
-	return client
-}
-
-// Tx returns an `ent.Tx` for mutations that were executed in transactions;
-// it returns an error otherwise.
-func (m TodoMutation) Tx() (*Tx, error) {
-	if _, ok := m.driver.(*txDriver); !ok {
-		return nil, errors.New("ent: mutation is not running in a transaction")
-	}
-	tx := &Tx{config: m.config}
-	tx.init()
-	return tx, nil
-}
-
-// SetID sets the value of the id field. Note that this
-// operation is only accepted on creation of Todo entities.
-func (m *TodoMutation) SetID(id int) {
-	m.id = &id
-}
-
-// ID returns the ID value in the mutation. Note that the ID is only available
-// if it was provided to the builder or after it was returned from the database.
-func (m *TodoMutation) ID() (id int, exists bool) {
-	if m.id == nil {
-		return
-	}
-	return *m.id, true
-}
-
-// IDs queries the database and returns the entity ids that match the mutation's predicate.
-// That means, if the mutation is applied within a transaction with an isolation level such
-// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
-// or updated by the mutation.
-func (m *TodoMutation) IDs(ctx context.Context) ([]int, error) {
-	switch {
-	case m.op.Is(OpUpdateOne | OpDeleteOne):
-		id, exists := m.ID()
-		if exists {
-			return []int{id}, nil
-		}
-		fallthrough
-	case m.op.Is(OpUpdate | OpDelete):
-		return m.Client().Todo.Query().Where(m.predicates...).IDs(ctx)
-	default:
-		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
-	}
-}
-
-// SetTodo sets the "todo" field.
-func (m *TodoMutation) SetTodo(s string) {
-	m.todo = &s
-}
-
-// Todo returns the value of the "todo" field in the mutation.
-func (m *TodoMutation) Todo() (r string, exists bool) {
-	v := m.todo
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldTodo returns the old "todo" field's value of the Todo entity.
-// If the Todo object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *TodoMutation) OldTodo(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldTodo is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldTodo requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldTodo: %w", err)
-	}
-	return oldValue.Todo, nil
-}
-
-// ResetTodo resets all changes to the "todo" field.
-func (m *TodoMutation) ResetTodo() {
-	m.todo = nil
-}
-
-// SetUserID sets the "user_id" field.
-func (m *TodoMutation) SetUserID(i int) {
-	m.user = &i
-}
-
-// UserID returns the value of the "user_id" field in the mutation.
-func (m *TodoMutation) UserID() (r int, exists bool) {
-	v := m.user
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldUserID returns the old "user_id" field's value of the Todo entity.
-// If the Todo object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *TodoMutation) OldUserID(ctx context.Context) (v int, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldUserID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldUserID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldUserID: %w", err)
-	}
-	return oldValue.UserID, nil
-}
-
-// ClearUserID clears the value of the "user_id" field.
-func (m *TodoMutation) ClearUserID() {
-	m.user = nil
-	m.clearedFields[todo.FieldUserID] = struct{}{}
-}
-
-// UserIDCleared returns if the "user_id" field was cleared in this mutation.
-func (m *TodoMutation) UserIDCleared() bool {
-	_, ok := m.clearedFields[todo.FieldUserID]
-	return ok
-}
-
-// ResetUserID resets all changes to the "user_id" field.
-func (m *TodoMutation) ResetUserID() {
-	m.user = nil
-	delete(m.clearedFields, todo.FieldUserID)
-}
-
-// SetTodoStatusesID sets the "todo_statuses_id" field.
-func (m *TodoMutation) SetTodoStatusesID(i int) {
-	m.todo_statu = &i
-}
-
-// TodoStatusesID returns the value of the "todo_statuses_id" field in the mutation.
-func (m *TodoMutation) TodoStatusesID() (r int, exists bool) {
-	v := m.todo_statu
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldTodoStatusesID returns the old "todo_statuses_id" field's value of the Todo entity.
-// If the Todo object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *TodoMutation) OldTodoStatusesID(ctx context.Context) (v int, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldTodoStatusesID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldTodoStatusesID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldTodoStatusesID: %w", err)
-	}
-	return oldValue.TodoStatusesID, nil
-}
-
-// ClearTodoStatusesID clears the value of the "todo_statuses_id" field.
-func (m *TodoMutation) ClearTodoStatusesID() {
-	m.todo_statu = nil
-	m.clearedFields[todo.FieldTodoStatusesID] = struct{}{}
-}
-
-// TodoStatusesIDCleared returns if the "todo_statuses_id" field was cleared in this mutation.
-func (m *TodoMutation) TodoStatusesIDCleared() bool {
-	_, ok := m.clearedFields[todo.FieldTodoStatusesID]
-	return ok
-}
-
-// ResetTodoStatusesID resets all changes to the "todo_statuses_id" field.
-func (m *TodoMutation) ResetTodoStatusesID() {
-	m.todo_statu = nil
-	delete(m.clearedFields, todo.FieldTodoStatusesID)
-}
-
-// SetCreatedAt sets the "created_at" field.
-func (m *TodoMutation) SetCreatedAt(t time.Time) {
-	m.created_at = &t
-}
-
-// CreatedAt returns the value of the "created_at" field in the mutation.
-func (m *TodoMutation) CreatedAt() (r time.Time, exists bool) {
-	v := m.created_at
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldCreatedAt returns the old "created_at" field's value of the Todo entity.
-// If the Todo object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *TodoMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
-	}
-	return oldValue.CreatedAt, nil
-}
-
-// ResetCreatedAt resets all changes to the "created_at" field.
-func (m *TodoMutation) ResetCreatedAt() {
-	m.created_at = nil
-}
-
-// SetUpdatedAt sets the "updated_at" field.
-func (m *TodoMutation) SetUpdatedAt(t time.Time) {
-	m.updated_at = &t
-}
-
-// UpdatedAt returns the value of the "updated_at" field in the mutation.
-func (m *TodoMutation) UpdatedAt() (r time.Time, exists bool) {
-	v := m.updated_at
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldUpdatedAt returns the old "updated_at" field's value of the Todo entity.
-// If the Todo object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *TodoMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
-	}
-	return oldValue.UpdatedAt, nil
-}
-
-// ResetUpdatedAt resets all changes to the "updated_at" field.
-func (m *TodoMutation) ResetUpdatedAt() {
-	m.updated_at = nil
-}
-
-// SetTodoStatuID sets the "todo_statu" edge to the TodoStatus entity by id.
-func (m *TodoMutation) SetTodoStatuID(id int) {
-	m.todo_statu = &id
-}
-
-// ClearTodoStatu clears the "todo_statu" edge to the TodoStatus entity.
-func (m *TodoMutation) ClearTodoStatu() {
-	m.clearedtodo_statu = true
-}
-
-// TodoStatuCleared reports if the "todo_statu" edge to the TodoStatus entity was cleared.
-func (m *TodoMutation) TodoStatuCleared() bool {
-	return m.TodoStatusesIDCleared() || m.clearedtodo_statu
-}
-
-// TodoStatuID returns the "todo_statu" edge ID in the mutation.
-func (m *TodoMutation) TodoStatuID() (id int, exists bool) {
-	if m.todo_statu != nil {
-		return *m.todo_statu, true
-	}
-	return
-}
-
-// TodoStatuIDs returns the "todo_statu" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// TodoStatuID instead. It exists only for internal usage by the builders.
-func (m *TodoMutation) TodoStatuIDs() (ids []int) {
-	if id := m.todo_statu; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetTodoStatu resets all changes to the "todo_statu" edge.
-func (m *TodoMutation) ResetTodoStatu() {
-	m.todo_statu = nil
-	m.clearedtodo_statu = false
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (m *TodoMutation) ClearUser() {
-	m.cleareduser = true
-}
-
-// UserCleared reports if the "user" edge to the User entity was cleared.
-func (m *TodoMutation) UserCleared() bool {
-	return m.UserIDCleared() || m.cleareduser
-}
-
-// UserIDs returns the "user" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// UserID instead. It exists only for internal usage by the builders.
-func (m *TodoMutation) UserIDs() (ids []int) {
-	if id := m.user; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetUser resets all changes to the "user" edge.
-func (m *TodoMutation) ResetUser() {
-	m.user = nil
-	m.cleareduser = false
-}
-
-// Where appends a list predicates to the TodoMutation builder.
-func (m *TodoMutation) Where(ps ...predicate.Todo) {
-	m.predicates = append(m.predicates, ps...)
-}
-
-// WhereP appends storage-level predicates to the TodoMutation builder. Using this method,
-// users can use type-assertion to append predicates that do not depend on any generated package.
-func (m *TodoMutation) WhereP(ps ...func(*sql.Selector)) {
-	p := make([]predicate.Todo, len(ps))
-	for i := range ps {
-		p[i] = ps[i]
-	}
-	m.Where(p...)
-}
-
-// Op returns the operation name.
-func (m *TodoMutation) Op() Op {
-	return m.op
-}
-
-// SetOp allows setting the mutation operation.
-func (m *TodoMutation) SetOp(op Op) {
-	m.op = op
-}
-
-// Type returns the node type of this mutation (Todo).
-func (m *TodoMutation) Type() string {
-	return m.typ
-}
-
-// Fields returns all fields that were changed during this mutation. Note that in
-// order to get all numeric fields that were incremented/decremented, call
-// AddedFields().
-func (m *TodoMutation) Fields() []string {
-	fields := make([]string, 0, 5)
-	if m.todo != nil {
-		fields = append(fields, todo.FieldTodo)
-	}
-	if m.user != nil {
-		fields = append(fields, todo.FieldUserID)
-	}
-	if m.todo_statu != nil {
-		fields = append(fields, todo.FieldTodoStatusesID)
-	}
-	if m.created_at != nil {
-		fields = append(fields, todo.FieldCreatedAt)
-	}
-	if m.updated_at != nil {
-		fields = append(fields, todo.FieldUpdatedAt)
-	}
-	return fields
-}
-
-// Field returns the value of a field with the given name. The second boolean
-// return value indicates that this field was not set, or was not defined in the
-// schema.
-func (m *TodoMutation) Field(name string) (ent.Value, bool) {
-	switch name {
-	case todo.FieldTodo:
-		return m.Todo()
-	case todo.FieldUserID:
-		return m.UserID()
-	case todo.FieldTodoStatusesID:
-		return m.TodoStatusesID()
-	case todo.FieldCreatedAt:
-		return m.CreatedAt()
-	case todo.FieldUpdatedAt:
-		return m.UpdatedAt()
-	}
-	return nil, false
-}
-
-// OldField returns the old value of the field from the database. An error is
-// returned if the mutation operation is not UpdateOne, or the query to the
-// database failed.
-func (m *TodoMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
-	switch name {
-	case todo.FieldTodo:
-		return m.OldTodo(ctx)
-	case todo.FieldUserID:
-		return m.OldUserID(ctx)
-	case todo.FieldTodoStatusesID:
-		return m.OldTodoStatusesID(ctx)
-	case todo.FieldCreatedAt:
-		return m.OldCreatedAt(ctx)
-	case todo.FieldUpdatedAt:
-		return m.OldUpdatedAt(ctx)
-	}
-	return nil, fmt.Errorf("unknown Todo field %s", name)
-}
-
-// SetField sets the value of a field with the given name. It returns an error if
-// the field is not defined in the schema, or if the type mismatched the field
-// type.
-func (m *TodoMutation) SetField(name string, value ent.Value) error {
-	switch name {
-	case todo.FieldTodo:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetTodo(v)
-		return nil
-	case todo.FieldUserID:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetUserID(v)
-		return nil
-	case todo.FieldTodoStatusesID:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetTodoStatusesID(v)
-		return nil
-	case todo.FieldCreatedAt:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetCreatedAt(v)
-		return nil
-	case todo.FieldUpdatedAt:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetUpdatedAt(v)
-		return nil
-	}
-	return fmt.Errorf("unknown Todo field %s", name)
-}
-
-// AddedFields returns all numeric fields that were incremented/decremented during
-// this mutation.
-func (m *TodoMutation) AddedFields() []string {
-	var fields []string
-	return fields
-}
-
-// AddedField returns the numeric value that was incremented/decremented on a field
-// with the given name. The second boolean return value indicates that this field
-// was not set, or was not defined in the schema.
-func (m *TodoMutation) AddedField(name string) (ent.Value, bool) {
-	switch name {
-	}
-	return nil, false
-}
-
-// AddField adds the value to the field with the given name. It returns an error if
-// the field is not defined in the schema, or if the type mismatched the field
-// type.
-func (m *TodoMutation) AddField(name string, value ent.Value) error {
-	switch name {
-	}
-	return fmt.Errorf("unknown Todo numeric field %s", name)
-}
-
-// ClearedFields returns all nullable fields that were cleared during this
-// mutation.
-func (m *TodoMutation) ClearedFields() []string {
-	var fields []string
-	if m.FieldCleared(todo.FieldUserID) {
-		fields = append(fields, todo.FieldUserID)
-	}
-	if m.FieldCleared(todo.FieldTodoStatusesID) {
-		fields = append(fields, todo.FieldTodoStatusesID)
-	}
-	return fields
-}
-
-// FieldCleared returns a boolean indicating if a field with the given name was
-// cleared in this mutation.
-func (m *TodoMutation) FieldCleared(name string) bool {
-	_, ok := m.clearedFields[name]
-	return ok
-}
-
-// ClearField clears the value of the field with the given name. It returns an
-// error if the field is not defined in the schema.
-func (m *TodoMutation) ClearField(name string) error {
-	switch name {
-	case todo.FieldUserID:
-		m.ClearUserID()
-		return nil
-	case todo.FieldTodoStatusesID:
-		m.ClearTodoStatusesID()
-		return nil
-	}
-	return fmt.Errorf("unknown Todo nullable field %s", name)
-}
-
-// ResetField resets all changes in the mutation for the field with the given name.
-// It returns an error if the field is not defined in the schema.
-func (m *TodoMutation) ResetField(name string) error {
-	switch name {
-	case todo.FieldTodo:
-		m.ResetTodo()
-		return nil
-	case todo.FieldUserID:
-		m.ResetUserID()
-		return nil
-	case todo.FieldTodoStatusesID:
-		m.ResetTodoStatusesID()
-		return nil
-	case todo.FieldCreatedAt:
-		m.ResetCreatedAt()
-		return nil
-	case todo.FieldUpdatedAt:
-		m.ResetUpdatedAt()
-		return nil
-	}
-	return fmt.Errorf("unknown Todo field %s", name)
-}
-
-// AddedEdges returns all edge names that were set/added in this mutation.
-func (m *TodoMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
-	if m.todo_statu != nil {
-		edges = append(edges, todo.EdgeTodoStatu)
-	}
-	if m.user != nil {
-		edges = append(edges, todo.EdgeUser)
-	}
-	return edges
-}
-
-// AddedIDs returns all IDs (to other nodes) that were added for the given edge
-// name in this mutation.
-func (m *TodoMutation) AddedIDs(name string) []ent.Value {
-	switch name {
-	case todo.EdgeTodoStatu:
-		if id := m.todo_statu; id != nil {
-			return []ent.Value{*id}
-		}
-	case todo.EdgeUser:
-		if id := m.user; id != nil {
-			return []ent.Value{*id}
-		}
-	}
-	return nil
-}
-
-// RemovedEdges returns all edge names that were removed in this mutation.
-func (m *TodoMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
-	return edges
-}
-
-// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
-// the given name in this mutation.
-func (m *TodoMutation) RemovedIDs(name string) []ent.Value {
-	return nil
-}
-
-// ClearedEdges returns all edge names that were cleared in this mutation.
-func (m *TodoMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
-	if m.clearedtodo_statu {
-		edges = append(edges, todo.EdgeTodoStatu)
-	}
-	if m.cleareduser {
-		edges = append(edges, todo.EdgeUser)
-	}
-	return edges
-}
-
-// EdgeCleared returns a boolean which indicates if the edge with the given name
-// was cleared in this mutation.
-func (m *TodoMutation) EdgeCleared(name string) bool {
-	switch name {
-	case todo.EdgeTodoStatu:
-		return m.clearedtodo_statu
-	case todo.EdgeUser:
-		return m.cleareduser
-	}
-	return false
-}
-
-// ClearEdge clears the value of the edge with the given name. It returns an error
-// if that edge is not defined in the schema.
-func (m *TodoMutation) ClearEdge(name string) error {
-	switch name {
-	case todo.EdgeTodoStatu:
-		m.ClearTodoStatu()
-		return nil
-	case todo.EdgeUser:
-		m.ClearUser()
-		return nil
-	}
-	return fmt.Errorf("unknown Todo unique edge %s", name)
-}
-
-// ResetEdge resets all changes to the edge with the given name in this mutation.
-// It returns an error if the edge is not defined in the schema.
-func (m *TodoMutation) ResetEdge(name string) error {
-	switch name {
-	case todo.EdgeTodoStatu:
-		m.ResetTodoStatu()
-		return nil
-	case todo.EdgeUser:
-		m.ResetUser()
-		return nil
-	}
-	return fmt.Errorf("unknown Todo edge %s", name)
-}
-
-// TodoStatusMutation represents an operation that mutates the TodoStatus nodes in the graph.
-type TodoStatusMutation struct {
+// CarMutation represents an operation that mutates the Car nodes in the graph.
+type CarMutation struct {
 	config
 	op            Op
 	typ           string
 	id            *int
-	status        *string
-	created_at    *time.Time
-	updated_at    *time.Time
+	model         *string
+	registered_at *time.Time
 	clearedFields map[string]struct{}
-	todos         map[int]struct{}
-	removedtodos  map[int]struct{}
-	clearedtodos  bool
+	owner         *int
+	clearedowner  bool
 	done          bool
-	oldValue      func(context.Context) (*TodoStatus, error)
-	predicates    []predicate.TodoStatus
+	oldValue      func(context.Context) (*Car, error)
+	predicates    []predicate.Car
 }
 
-var _ ent.Mutation = (*TodoStatusMutation)(nil)
+var _ ent.Mutation = (*CarMutation)(nil)
 
-// todostatusOption allows management of the mutation configuration using functional options.
-type todostatusOption func(*TodoStatusMutation)
+// carOption allows management of the mutation configuration using functional options.
+type carOption func(*CarMutation)
 
-// newTodoStatusMutation creates new mutation for the TodoStatus entity.
-func newTodoStatusMutation(c config, op Op, opts ...todostatusOption) *TodoStatusMutation {
-	m := &TodoStatusMutation{
+// newCarMutation creates new mutation for the Car entity.
+func newCarMutation(c config, op Op, opts ...carOption) *CarMutation {
+	m := &CarMutation{
 		config:        c,
 		op:            op,
-		typ:           TypeTodoStatus,
+		typ:           TypeCar,
 		clearedFields: make(map[string]struct{}),
 	}
 	for _, opt := range opts {
@@ -1506,20 +66,20 @@ func newTodoStatusMutation(c config, op Op, opts ...todostatusOption) *TodoStatu
 	return m
 }
 
-// withTodoStatusID sets the ID field of the mutation.
-func withTodoStatusID(id int) todostatusOption {
-	return func(m *TodoStatusMutation) {
+// withCarID sets the ID field of the mutation.
+func withCarID(id int) carOption {
+	return func(m *CarMutation) {
 		var (
 			err   error
 			once  sync.Once
-			value *TodoStatus
+			value *Car
 		)
-		m.oldValue = func(ctx context.Context) (*TodoStatus, error) {
+		m.oldValue = func(ctx context.Context) (*Car, error) {
 			once.Do(func() {
 				if m.done {
 					err = errors.New("querying old values post mutation is not allowed")
 				} else {
-					value, err = m.Client().TodoStatus.Get(ctx, id)
+					value, err = m.Client().Car.Get(ctx, id)
 				}
 			})
 			return value, err
@@ -1528,10 +88,10 @@ func withTodoStatusID(id int) todostatusOption {
 	}
 }
 
-// withTodoStatus sets the old TodoStatus of the mutation.
-func withTodoStatus(node *TodoStatus) todostatusOption {
-	return func(m *TodoStatusMutation) {
-		m.oldValue = func(context.Context) (*TodoStatus, error) {
+// withCar sets the old Car of the mutation.
+func withCar(node *Car) carOption {
+	return func(m *CarMutation) {
+		m.oldValue = func(context.Context) (*Car, error) {
 			return node, nil
 		}
 		m.id = &node.ID
@@ -1540,7 +100,7 @@ func withTodoStatus(node *TodoStatus) todostatusOption {
 
 // Client returns a new `ent.Client` from the mutation. If the mutation was
 // executed in a transaction (ent.Tx), a transactional client is returned.
-func (m TodoStatusMutation) Client() *Client {
+func (m CarMutation) Client() *Client {
 	client := &Client{config: m.config}
 	client.init()
 	return client
@@ -1548,7 +108,7 @@ func (m TodoStatusMutation) Client() *Client {
 
 // Tx returns an `ent.Tx` for mutations that were executed in transactions;
 // it returns an error otherwise.
-func (m TodoStatusMutation) Tx() (*Tx, error) {
+func (m CarMutation) Tx() (*Tx, error) {
 	if _, ok := m.driver.(*txDriver); !ok {
 		return nil, errors.New("ent: mutation is not running in a transaction")
 	}
@@ -1557,15 +117,9 @@ func (m TodoStatusMutation) Tx() (*Tx, error) {
 	return tx, nil
 }
 
-// SetID sets the value of the id field. Note that this
-// operation is only accepted on creation of TodoStatus entities.
-func (m *TodoStatusMutation) SetID(id int) {
-	m.id = &id
-}
-
 // ID returns the ID value in the mutation. Note that the ID is only available
 // if it was provided to the builder or after it was returned from the database.
-func (m *TodoStatusMutation) ID() (id int, exists bool) {
+func (m *CarMutation) ID() (id int, exists bool) {
 	if m.id == nil {
 		return
 	}
@@ -1576,7 +130,7 @@ func (m *TodoStatusMutation) ID() (id int, exists bool) {
 // That means, if the mutation is applied within a transaction with an isolation level such
 // as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
 // or updated by the mutation.
-func (m *TodoStatusMutation) IDs(ctx context.Context) ([]int, error) {
+func (m *CarMutation) IDs(ctx context.Context) ([]int, error) {
 	switch {
 	case m.op.Is(OpUpdateOne | OpDeleteOne):
 		id, exists := m.ID()
@@ -1585,183 +139,132 @@ func (m *TodoStatusMutation) IDs(ctx context.Context) ([]int, error) {
 		}
 		fallthrough
 	case m.op.Is(OpUpdate | OpDelete):
-		return m.Client().TodoStatus.Query().Where(m.predicates...).IDs(ctx)
+		return m.Client().Car.Query().Where(m.predicates...).IDs(ctx)
 	default:
 		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
 	}
 }
 
-// SetStatus sets the "status" field.
-func (m *TodoStatusMutation) SetStatus(s string) {
-	m.status = &s
+// SetModel sets the "model" field.
+func (m *CarMutation) SetModel(s string) {
+	m.model = &s
 }
 
-// Status returns the value of the "status" field in the mutation.
-func (m *TodoStatusMutation) Status() (r string, exists bool) {
-	v := m.status
+// Model returns the value of the "model" field in the mutation.
+func (m *CarMutation) Model() (r string, exists bool) {
+	v := m.model
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldStatus returns the old "status" field's value of the TodoStatus entity.
-// If the TodoStatus object wasn't provided to the builder, the object is fetched from the database.
+// OldModel returns the old "model" field's value of the Car entity.
+// If the Car object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *TodoStatusMutation) OldStatus(ctx context.Context) (v string, err error) {
+func (m *CarMutation) OldModel(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+		return v, errors.New("OldModel is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldStatus requires an ID field in the mutation")
+		return v, errors.New("OldModel requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+		return v, fmt.Errorf("querying old value for OldModel: %w", err)
 	}
-	return oldValue.Status, nil
+	return oldValue.Model, nil
 }
 
-// ResetStatus resets all changes to the "status" field.
-func (m *TodoStatusMutation) ResetStatus() {
-	m.status = nil
+// ResetModel resets all changes to the "model" field.
+func (m *CarMutation) ResetModel() {
+	m.model = nil
 }
 
-// SetCreatedAt sets the "created_at" field.
-func (m *TodoStatusMutation) SetCreatedAt(t time.Time) {
-	m.created_at = &t
+// SetRegisteredAt sets the "registered_at" field.
+func (m *CarMutation) SetRegisteredAt(t time.Time) {
+	m.registered_at = &t
 }
 
-// CreatedAt returns the value of the "created_at" field in the mutation.
-func (m *TodoStatusMutation) CreatedAt() (r time.Time, exists bool) {
-	v := m.created_at
+// RegisteredAt returns the value of the "registered_at" field in the mutation.
+func (m *CarMutation) RegisteredAt() (r time.Time, exists bool) {
+	v := m.registered_at
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldCreatedAt returns the old "created_at" field's value of the TodoStatus entity.
-// If the TodoStatus object wasn't provided to the builder, the object is fetched from the database.
+// OldRegisteredAt returns the old "registered_at" field's value of the Car entity.
+// If the Car object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *TodoStatusMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+func (m *CarMutation) OldRegisteredAt(ctx context.Context) (v time.Time, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+		return v, errors.New("OldRegisteredAt is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+		return v, errors.New("OldRegisteredAt requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+		return v, fmt.Errorf("querying old value for OldRegisteredAt: %w", err)
 	}
-	return oldValue.CreatedAt, nil
+	return oldValue.RegisteredAt, nil
 }
 
-// ResetCreatedAt resets all changes to the "created_at" field.
-func (m *TodoStatusMutation) ResetCreatedAt() {
-	m.created_at = nil
+// ResetRegisteredAt resets all changes to the "registered_at" field.
+func (m *CarMutation) ResetRegisteredAt() {
+	m.registered_at = nil
 }
 
-// SetUpdatedAt sets the "updated_at" field.
-func (m *TodoStatusMutation) SetUpdatedAt(t time.Time) {
-	m.updated_at = &t
+// SetOwnerID sets the "owner" edge to the User entity by id.
+func (m *CarMutation) SetOwnerID(id int) {
+	m.owner = &id
 }
 
-// UpdatedAt returns the value of the "updated_at" field in the mutation.
-func (m *TodoStatusMutation) UpdatedAt() (r time.Time, exists bool) {
-	v := m.updated_at
-	if v == nil {
-		return
-	}
-	return *v, true
+// ClearOwner clears the "owner" edge to the User entity.
+func (m *CarMutation) ClearOwner() {
+	m.clearedowner = true
 }
 
-// OldUpdatedAt returns the old "updated_at" field's value of the TodoStatus entity.
-// If the TodoStatus object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *TodoStatusMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
-	}
-	return oldValue.UpdatedAt, nil
+// OwnerCleared reports if the "owner" edge to the User entity was cleared.
+func (m *CarMutation) OwnerCleared() bool {
+	return m.clearedowner
 }
 
-// ResetUpdatedAt resets all changes to the "updated_at" field.
-func (m *TodoStatusMutation) ResetUpdatedAt() {
-	m.updated_at = nil
-}
-
-// AddTodoIDs adds the "todos" edge to the Todo entity by ids.
-func (m *TodoStatusMutation) AddTodoIDs(ids ...int) {
-	if m.todos == nil {
-		m.todos = make(map[int]struct{})
-	}
-	for i := range ids {
-		m.todos[ids[i]] = struct{}{}
-	}
-}
-
-// ClearTodos clears the "todos" edge to the Todo entity.
-func (m *TodoStatusMutation) ClearTodos() {
-	m.clearedtodos = true
-}
-
-// TodosCleared reports if the "todos" edge to the Todo entity was cleared.
-func (m *TodoStatusMutation) TodosCleared() bool {
-	return m.clearedtodos
-}
-
-// RemoveTodoIDs removes the "todos" edge to the Todo entity by IDs.
-func (m *TodoStatusMutation) RemoveTodoIDs(ids ...int) {
-	if m.removedtodos == nil {
-		m.removedtodos = make(map[int]struct{})
-	}
-	for i := range ids {
-		delete(m.todos, ids[i])
-		m.removedtodos[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedTodos returns the removed IDs of the "todos" edge to the Todo entity.
-func (m *TodoStatusMutation) RemovedTodosIDs() (ids []int) {
-	for id := range m.removedtodos {
-		ids = append(ids, id)
+// OwnerID returns the "owner" edge ID in the mutation.
+func (m *CarMutation) OwnerID() (id int, exists bool) {
+	if m.owner != nil {
+		return *m.owner, true
 	}
 	return
 }
 
-// TodosIDs returns the "todos" edge IDs in the mutation.
-func (m *TodoStatusMutation) TodosIDs() (ids []int) {
-	for id := range m.todos {
-		ids = append(ids, id)
+// OwnerIDs returns the "owner" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OwnerID instead. It exists only for internal usage by the builders.
+func (m *CarMutation) OwnerIDs() (ids []int) {
+	if id := m.owner; id != nil {
+		ids = append(ids, *id)
 	}
 	return
 }
 
-// ResetTodos resets all changes to the "todos" edge.
-func (m *TodoStatusMutation) ResetTodos() {
-	m.todos = nil
-	m.clearedtodos = false
-	m.removedtodos = nil
+// ResetOwner resets all changes to the "owner" edge.
+func (m *CarMutation) ResetOwner() {
+	m.owner = nil
+	m.clearedowner = false
 }
 
-// Where appends a list predicates to the TodoStatusMutation builder.
-func (m *TodoStatusMutation) Where(ps ...predicate.TodoStatus) {
+// Where appends a list predicates to the CarMutation builder.
+func (m *CarMutation) Where(ps ...predicate.Car) {
 	m.predicates = append(m.predicates, ps...)
 }
 
-// WhereP appends storage-level predicates to the TodoStatusMutation builder. Using this method,
+// WhereP appends storage-level predicates to the CarMutation builder. Using this method,
 // users can use type-assertion to append predicates that do not depend on any generated package.
-func (m *TodoStatusMutation) WhereP(ps ...func(*sql.Selector)) {
-	p := make([]predicate.TodoStatus, len(ps))
+func (m *CarMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Car, len(ps))
 	for i := range ps {
 		p[i] = ps[i]
 	}
@@ -1769,33 +272,30 @@ func (m *TodoStatusMutation) WhereP(ps ...func(*sql.Selector)) {
 }
 
 // Op returns the operation name.
-func (m *TodoStatusMutation) Op() Op {
+func (m *CarMutation) Op() Op {
 	return m.op
 }
 
 // SetOp allows setting the mutation operation.
-func (m *TodoStatusMutation) SetOp(op Op) {
+func (m *CarMutation) SetOp(op Op) {
 	m.op = op
 }
 
-// Type returns the node type of this mutation (TodoStatus).
-func (m *TodoStatusMutation) Type() string {
+// Type returns the node type of this mutation (Car).
+func (m *CarMutation) Type() string {
 	return m.typ
 }
 
 // Fields returns all fields that were changed during this mutation. Note that in
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
-func (m *TodoStatusMutation) Fields() []string {
-	fields := make([]string, 0, 3)
-	if m.status != nil {
-		fields = append(fields, todostatus.FieldStatus)
+func (m *CarMutation) Fields() []string {
+	fields := make([]string, 0, 2)
+	if m.model != nil {
+		fields = append(fields, car.FieldModel)
 	}
-	if m.created_at != nil {
-		fields = append(fields, todostatus.FieldCreatedAt)
-	}
-	if m.updated_at != nil {
-		fields = append(fields, todostatus.FieldUpdatedAt)
+	if m.registered_at != nil {
+		fields = append(fields, car.FieldRegisteredAt)
 	}
 	return fields
 }
@@ -1803,14 +303,12 @@ func (m *TodoStatusMutation) Fields() []string {
 // Field returns the value of a field with the given name. The second boolean
 // return value indicates that this field was not set, or was not defined in the
 // schema.
-func (m *TodoStatusMutation) Field(name string) (ent.Value, bool) {
+func (m *CarMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case todostatus.FieldStatus:
-		return m.Status()
-	case todostatus.FieldCreatedAt:
-		return m.CreatedAt()
-	case todostatus.FieldUpdatedAt:
-		return m.UpdatedAt()
+	case car.FieldModel:
+		return m.Model()
+	case car.FieldRegisteredAt:
+		return m.RegisteredAt()
 	}
 	return nil, false
 }
@@ -1818,222 +316,510 @@ func (m *TodoStatusMutation) Field(name string) (ent.Value, bool) {
 // OldField returns the old value of the field from the database. An error is
 // returned if the mutation operation is not UpdateOne, or the query to the
 // database failed.
-func (m *TodoStatusMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+func (m *CarMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case todostatus.FieldStatus:
-		return m.OldStatus(ctx)
-	case todostatus.FieldCreatedAt:
-		return m.OldCreatedAt(ctx)
-	case todostatus.FieldUpdatedAt:
-		return m.OldUpdatedAt(ctx)
+	case car.FieldModel:
+		return m.OldModel(ctx)
+	case car.FieldRegisteredAt:
+		return m.OldRegisteredAt(ctx)
 	}
-	return nil, fmt.Errorf("unknown TodoStatus field %s", name)
+	return nil, fmt.Errorf("unknown Car field %s", name)
 }
 
 // SetField sets the value of a field with the given name. It returns an error if
 // the field is not defined in the schema, or if the type mismatched the field
 // type.
-func (m *TodoStatusMutation) SetField(name string, value ent.Value) error {
+func (m *CarMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case todostatus.FieldStatus:
+	case car.FieldModel:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetStatus(v)
+		m.SetModel(v)
 		return nil
-	case todostatus.FieldCreatedAt:
+	case car.FieldRegisteredAt:
 		v, ok := value.(time.Time)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetCreatedAt(v)
-		return nil
-	case todostatus.FieldUpdatedAt:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetUpdatedAt(v)
+		m.SetRegisteredAt(v)
 		return nil
 	}
-	return fmt.Errorf("unknown TodoStatus field %s", name)
+	return fmt.Errorf("unknown Car field %s", name)
 }
 
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
-func (m *TodoStatusMutation) AddedFields() []string {
+func (m *CarMutation) AddedFields() []string {
 	return nil
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
-func (m *TodoStatusMutation) AddedField(name string) (ent.Value, bool) {
+func (m *CarMutation) AddedField(name string) (ent.Value, bool) {
 	return nil, false
 }
 
 // AddField adds the value to the field with the given name. It returns an error if
 // the field is not defined in the schema, or if the type mismatched the field
 // type.
-func (m *TodoStatusMutation) AddField(name string, value ent.Value) error {
+func (m *CarMutation) AddField(name string, value ent.Value) error {
 	switch name {
 	}
-	return fmt.Errorf("unknown TodoStatus numeric field %s", name)
+	return fmt.Errorf("unknown Car numeric field %s", name)
 }
 
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
-func (m *TodoStatusMutation) ClearedFields() []string {
+func (m *CarMutation) ClearedFields() []string {
 	return nil
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
 // cleared in this mutation.
-func (m *TodoStatusMutation) FieldCleared(name string) bool {
+func (m *CarMutation) FieldCleared(name string) bool {
 	_, ok := m.clearedFields[name]
 	return ok
 }
 
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
-func (m *TodoStatusMutation) ClearField(name string) error {
-	return fmt.Errorf("unknown TodoStatus nullable field %s", name)
+func (m *CarMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown Car nullable field %s", name)
 }
 
 // ResetField resets all changes in the mutation for the field with the given name.
 // It returns an error if the field is not defined in the schema.
-func (m *TodoStatusMutation) ResetField(name string) error {
+func (m *CarMutation) ResetField(name string) error {
 	switch name {
-	case todostatus.FieldStatus:
-		m.ResetStatus()
+	case car.FieldModel:
+		m.ResetModel()
 		return nil
-	case todostatus.FieldCreatedAt:
-		m.ResetCreatedAt()
-		return nil
-	case todostatus.FieldUpdatedAt:
-		m.ResetUpdatedAt()
+	case car.FieldRegisteredAt:
+		m.ResetRegisteredAt()
 		return nil
 	}
-	return fmt.Errorf("unknown TodoStatus field %s", name)
+	return fmt.Errorf("unknown Car field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
-func (m *TodoStatusMutation) AddedEdges() []string {
+func (m *CarMutation) AddedEdges() []string {
 	edges := make([]string, 0, 1)
-	if m.todos != nil {
-		edges = append(edges, todostatus.EdgeTodos)
+	if m.owner != nil {
+		edges = append(edges, car.EdgeOwner)
 	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
-func (m *TodoStatusMutation) AddedIDs(name string) []ent.Value {
+func (m *CarMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case todostatus.EdgeTodos:
-		ids := make([]ent.Value, 0, len(m.todos))
-		for id := range m.todos {
-			ids = append(ids, id)
+	case car.EdgeOwner:
+		if id := m.owner; id != nil {
+			return []ent.Value{*id}
 		}
-		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
-func (m *TodoStatusMutation) RemovedEdges() []string {
+func (m *CarMutation) RemovedEdges() []string {
 	edges := make([]string, 0, 1)
-	if m.removedtodos != nil {
-		edges = append(edges, todostatus.EdgeTodos)
-	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
-func (m *TodoStatusMutation) RemovedIDs(name string) []ent.Value {
-	switch name {
-	case todostatus.EdgeTodos:
-		ids := make([]ent.Value, 0, len(m.removedtodos))
-		for id := range m.removedtodos {
-			ids = append(ids, id)
-		}
-		return ids
-	}
+func (m *CarMutation) RemovedIDs(name string) []ent.Value {
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
-func (m *TodoStatusMutation) ClearedEdges() []string {
+func (m *CarMutation) ClearedEdges() []string {
 	edges := make([]string, 0, 1)
-	if m.clearedtodos {
-		edges = append(edges, todostatus.EdgeTodos)
+	if m.clearedowner {
+		edges = append(edges, car.EdgeOwner)
 	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
-func (m *TodoStatusMutation) EdgeCleared(name string) bool {
+func (m *CarMutation) EdgeCleared(name string) bool {
 	switch name {
-	case todostatus.EdgeTodos:
-		return m.clearedtodos
+	case car.EdgeOwner:
+		return m.clearedowner
 	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
-func (m *TodoStatusMutation) ClearEdge(name string) error {
+func (m *CarMutation) ClearEdge(name string) error {
 	switch name {
+	case car.EdgeOwner:
+		m.ClearOwner()
+		return nil
 	}
-	return fmt.Errorf("unknown TodoStatus unique edge %s", name)
+	return fmt.Errorf("unknown Car unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
-func (m *TodoStatusMutation) ResetEdge(name string) error {
+func (m *CarMutation) ResetEdge(name string) error {
 	switch name {
-	case todostatus.EdgeTodos:
-		m.ResetTodos()
+	case car.EdgeOwner:
+		m.ResetOwner()
 		return nil
 	}
-	return fmt.Errorf("unknown TodoStatus edge %s", name)
+	return fmt.Errorf("unknown Car edge %s", name)
+}
+
+// GroupMutation represents an operation that mutates the Group nodes in the graph.
+type GroupMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *int
+	name          *string
+	clearedFields map[string]struct{}
+	done          bool
+	oldValue      func(context.Context) (*Group, error)
+	predicates    []predicate.Group
+}
+
+var _ ent.Mutation = (*GroupMutation)(nil)
+
+// groupOption allows management of the mutation configuration using functional options.
+type groupOption func(*GroupMutation)
+
+// newGroupMutation creates new mutation for the Group entity.
+func newGroupMutation(c config, op Op, opts ...groupOption) *GroupMutation {
+	m := &GroupMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeGroup,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withGroupID sets the ID field of the mutation.
+func withGroupID(id int) groupOption {
+	return func(m *GroupMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Group
+		)
+		m.oldValue = func(ctx context.Context) (*Group, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Group.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withGroup sets the old Group of the mutation.
+func withGroup(node *Group) groupOption {
+	return func(m *GroupMutation) {
+		m.oldValue = func(context.Context) (*Group, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m GroupMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m GroupMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *GroupMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *GroupMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Group.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetName sets the "name" field.
+func (m *GroupMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *GroupMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the Group entity.
+// If the Group object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *GroupMutation) ResetName() {
+	m.name = nil
+}
+
+// Where appends a list predicates to the GroupMutation builder.
+func (m *GroupMutation) Where(ps ...predicate.Group) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the GroupMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *GroupMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Group, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *GroupMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *GroupMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (Group).
+func (m *GroupMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *GroupMutation) Fields() []string {
+	fields := make([]string, 0, 1)
+	if m.name != nil {
+		fields = append(fields, group.FieldName)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *GroupMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case group.FieldName:
+		return m.Name()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *GroupMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case group.FieldName:
+		return m.OldName(ctx)
+	}
+	return nil, fmt.Errorf("unknown Group field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *GroupMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case group.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Group field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *GroupMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *GroupMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *GroupMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Group numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *GroupMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *GroupMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *GroupMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown Group nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *GroupMutation) ResetField(name string) error {
+	switch name {
+	case group.FieldName:
+		m.ResetName()
+		return nil
+	}
+	return fmt.Errorf("unknown Group field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *GroupMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *GroupMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *GroupMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *GroupMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *GroupMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *GroupMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *GroupMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown Group unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *GroupMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown Group edge %s", name)
 }
 
 // UserMutation represents an operation that mutates the User nodes in the graph.
 type UserMutation struct {
 	config
-	op                     Op
-	typ                    string
-	id                     *int
-	provider               *string
-	uid                    *string
-	encrypted_password     *string
-	reset_password_token   *string
-	reset_password_sent_at *time.Time
-	allow_password_change  *bool
-	remember_created_at    *time.Time
-	confirmation_token     *string
-	confirmed_at           *time.Time
-	confirmation_sent_at   *time.Time
-	unconfirmed_email      *string
-	name                   *string
-	nickname               *string
-	image                  *string
-	email                  *string
-	tokens                 *[]string
-	appendtokens           []string
-	created_at             *time.Time
-	updated_at             *time.Time
-	clearedFields          map[string]struct{}
-	todos                  map[int]struct{}
-	removedtodos           map[int]struct{}
-	clearedtodos           bool
-	done                   bool
-	oldValue               func(context.Context) (*User, error)
-	predicates             []predicate.User
+	op            Op
+	typ           string
+	id            *int
+	age           *int
+	addage        *int
+	name          *string
+	clearedFields map[string]struct{}
+	cars          map[int]struct{}
+	removedcars   map[int]struct{}
+	clearedcars   bool
+	done          bool
+	oldValue      func(context.Context) (*User, error)
+	predicates    []predicate.User
 }
 
 var _ ent.Mutation = (*UserMutation)(nil)
@@ -2106,12 +892,6 @@ func (m UserMutation) Tx() (*Tx, error) {
 	return tx, nil
 }
 
-// SetID sets the value of the id field. Note that this
-// operation is only accepted on creation of User entities.
-func (m *UserMutation) SetID(id int) {
-	m.id = &id
-}
-
 // ID returns the ID value in the mutation. Note that the ID is only available
 // if it was provided to the builder or after it was returned from the database.
 func (m *UserMutation) ID() (id int, exists bool) {
@@ -2140,504 +920,60 @@ func (m *UserMutation) IDs(ctx context.Context) ([]int, error) {
 	}
 }
 
-// SetProvider sets the "provider" field.
-func (m *UserMutation) SetProvider(s string) {
-	m.provider = &s
+// SetAge sets the "age" field.
+func (m *UserMutation) SetAge(i int) {
+	m.age = &i
+	m.addage = nil
 }
 
-// Provider returns the value of the "provider" field in the mutation.
-func (m *UserMutation) Provider() (r string, exists bool) {
-	v := m.provider
+// Age returns the value of the "age" field in the mutation.
+func (m *UserMutation) Age() (r int, exists bool) {
+	v := m.age
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldProvider returns the old "provider" field's value of the User entity.
+// OldAge returns the old "age" field's value of the User entity.
 // If the User object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *UserMutation) OldProvider(ctx context.Context) (v string, err error) {
+func (m *UserMutation) OldAge(ctx context.Context) (v int, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldProvider is only allowed on UpdateOne operations")
+		return v, errors.New("OldAge is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldProvider requires an ID field in the mutation")
+		return v, errors.New("OldAge requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldProvider: %w", err)
+		return v, fmt.Errorf("querying old value for OldAge: %w", err)
 	}
-	return oldValue.Provider, nil
+	return oldValue.Age, nil
 }
 
-// ResetProvider resets all changes to the "provider" field.
-func (m *UserMutation) ResetProvider() {
-	m.provider = nil
+// AddAge adds i to the "age" field.
+func (m *UserMutation) AddAge(i int) {
+	if m.addage != nil {
+		*m.addage += i
+	} else {
+		m.addage = &i
+	}
 }
 
-// SetUID sets the "uid" field.
-func (m *UserMutation) SetUID(s string) {
-	m.uid = &s
-}
-
-// UID returns the value of the "uid" field in the mutation.
-func (m *UserMutation) UID() (r string, exists bool) {
-	v := m.uid
+// AddedAge returns the value that was added to the "age" field in this mutation.
+func (m *UserMutation) AddedAge() (r int, exists bool) {
+	v := m.addage
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldUID returns the old "uid" field's value of the User entity.
-// If the User object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *UserMutation) OldUID(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldUID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldUID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldUID: %w", err)
-	}
-	return oldValue.UID, nil
-}
-
-// ResetUID resets all changes to the "uid" field.
-func (m *UserMutation) ResetUID() {
-	m.uid = nil
-}
-
-// SetEncryptedPassword sets the "encrypted_password" field.
-func (m *UserMutation) SetEncryptedPassword(s string) {
-	m.encrypted_password = &s
-}
-
-// EncryptedPassword returns the value of the "encrypted_password" field in the mutation.
-func (m *UserMutation) EncryptedPassword() (r string, exists bool) {
-	v := m.encrypted_password
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldEncryptedPassword returns the old "encrypted_password" field's value of the User entity.
-// If the User object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *UserMutation) OldEncryptedPassword(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldEncryptedPassword is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldEncryptedPassword requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldEncryptedPassword: %w", err)
-	}
-	return oldValue.EncryptedPassword, nil
-}
-
-// ResetEncryptedPassword resets all changes to the "encrypted_password" field.
-func (m *UserMutation) ResetEncryptedPassword() {
-	m.encrypted_password = nil
-}
-
-// SetResetPasswordToken sets the "reset_password_token" field.
-func (m *UserMutation) SetResetPasswordToken(s string) {
-	m.reset_password_token = &s
-}
-
-// ResetPasswordToken returns the value of the "reset_password_token" field in the mutation.
-func (m *UserMutation) ResetPasswordToken() (r string, exists bool) {
-	v := m.reset_password_token
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldResetPasswordToken returns the old "reset_password_token" field's value of the User entity.
-// If the User object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *UserMutation) OldResetPasswordToken(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldResetPasswordToken is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldResetPasswordToken requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldResetPasswordToken: %w", err)
-	}
-	return oldValue.ResetPasswordToken, nil
-}
-
-// ClearResetPasswordToken clears the value of the "reset_password_token" field.
-func (m *UserMutation) ClearResetPasswordToken() {
-	m.reset_password_token = nil
-	m.clearedFields[user.FieldResetPasswordToken] = struct{}{}
-}
-
-// ResetPasswordTokenCleared returns if the "reset_password_token" field was cleared in this mutation.
-func (m *UserMutation) ResetPasswordTokenCleared() bool {
-	_, ok := m.clearedFields[user.FieldResetPasswordToken]
-	return ok
-}
-
-// ResetResetPasswordToken resets all changes to the "reset_password_token" field.
-func (m *UserMutation) ResetResetPasswordToken() {
-	m.reset_password_token = nil
-	delete(m.clearedFields, user.FieldResetPasswordToken)
-}
-
-// SetResetPasswordSentAt sets the "reset_password_sent_at" field.
-func (m *UserMutation) SetResetPasswordSentAt(t time.Time) {
-	m.reset_password_sent_at = &t
-}
-
-// ResetPasswordSentAt returns the value of the "reset_password_sent_at" field in the mutation.
-func (m *UserMutation) ResetPasswordSentAt() (r time.Time, exists bool) {
-	v := m.reset_password_sent_at
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldResetPasswordSentAt returns the old "reset_password_sent_at" field's value of the User entity.
-// If the User object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *UserMutation) OldResetPasswordSentAt(ctx context.Context) (v time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldResetPasswordSentAt is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldResetPasswordSentAt requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldResetPasswordSentAt: %w", err)
-	}
-	return oldValue.ResetPasswordSentAt, nil
-}
-
-// ClearResetPasswordSentAt clears the value of the "reset_password_sent_at" field.
-func (m *UserMutation) ClearResetPasswordSentAt() {
-	m.reset_password_sent_at = nil
-	m.clearedFields[user.FieldResetPasswordSentAt] = struct{}{}
-}
-
-// ResetPasswordSentAtCleared returns if the "reset_password_sent_at" field was cleared in this mutation.
-func (m *UserMutation) ResetPasswordSentAtCleared() bool {
-	_, ok := m.clearedFields[user.FieldResetPasswordSentAt]
-	return ok
-}
-
-// ResetResetPasswordSentAt resets all changes to the "reset_password_sent_at" field.
-func (m *UserMutation) ResetResetPasswordSentAt() {
-	m.reset_password_sent_at = nil
-	delete(m.clearedFields, user.FieldResetPasswordSentAt)
-}
-
-// SetAllowPasswordChange sets the "allow_password_change" field.
-func (m *UserMutation) SetAllowPasswordChange(b bool) {
-	m.allow_password_change = &b
-}
-
-// AllowPasswordChange returns the value of the "allow_password_change" field in the mutation.
-func (m *UserMutation) AllowPasswordChange() (r bool, exists bool) {
-	v := m.allow_password_change
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldAllowPasswordChange returns the old "allow_password_change" field's value of the User entity.
-// If the User object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *UserMutation) OldAllowPasswordChange(ctx context.Context) (v bool, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldAllowPasswordChange is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldAllowPasswordChange requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldAllowPasswordChange: %w", err)
-	}
-	return oldValue.AllowPasswordChange, nil
-}
-
-// ClearAllowPasswordChange clears the value of the "allow_password_change" field.
-func (m *UserMutation) ClearAllowPasswordChange() {
-	m.allow_password_change = nil
-	m.clearedFields[user.FieldAllowPasswordChange] = struct{}{}
-}
-
-// AllowPasswordChangeCleared returns if the "allow_password_change" field was cleared in this mutation.
-func (m *UserMutation) AllowPasswordChangeCleared() bool {
-	_, ok := m.clearedFields[user.FieldAllowPasswordChange]
-	return ok
-}
-
-// ResetAllowPasswordChange resets all changes to the "allow_password_change" field.
-func (m *UserMutation) ResetAllowPasswordChange() {
-	m.allow_password_change = nil
-	delete(m.clearedFields, user.FieldAllowPasswordChange)
-}
-
-// SetRememberCreatedAt sets the "remember_created_at" field.
-func (m *UserMutation) SetRememberCreatedAt(t time.Time) {
-	m.remember_created_at = &t
-}
-
-// RememberCreatedAt returns the value of the "remember_created_at" field in the mutation.
-func (m *UserMutation) RememberCreatedAt() (r time.Time, exists bool) {
-	v := m.remember_created_at
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldRememberCreatedAt returns the old "remember_created_at" field's value of the User entity.
-// If the User object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *UserMutation) OldRememberCreatedAt(ctx context.Context) (v time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldRememberCreatedAt is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldRememberCreatedAt requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldRememberCreatedAt: %w", err)
-	}
-	return oldValue.RememberCreatedAt, nil
-}
-
-// ClearRememberCreatedAt clears the value of the "remember_created_at" field.
-func (m *UserMutation) ClearRememberCreatedAt() {
-	m.remember_created_at = nil
-	m.clearedFields[user.FieldRememberCreatedAt] = struct{}{}
-}
-
-// RememberCreatedAtCleared returns if the "remember_created_at" field was cleared in this mutation.
-func (m *UserMutation) RememberCreatedAtCleared() bool {
-	_, ok := m.clearedFields[user.FieldRememberCreatedAt]
-	return ok
-}
-
-// ResetRememberCreatedAt resets all changes to the "remember_created_at" field.
-func (m *UserMutation) ResetRememberCreatedAt() {
-	m.remember_created_at = nil
-	delete(m.clearedFields, user.FieldRememberCreatedAt)
-}
-
-// SetConfirmationToken sets the "confirmation_token" field.
-func (m *UserMutation) SetConfirmationToken(s string) {
-	m.confirmation_token = &s
-}
-
-// ConfirmationToken returns the value of the "confirmation_token" field in the mutation.
-func (m *UserMutation) ConfirmationToken() (r string, exists bool) {
-	v := m.confirmation_token
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldConfirmationToken returns the old "confirmation_token" field's value of the User entity.
-// If the User object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *UserMutation) OldConfirmationToken(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldConfirmationToken is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldConfirmationToken requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldConfirmationToken: %w", err)
-	}
-	return oldValue.ConfirmationToken, nil
-}
-
-// ClearConfirmationToken clears the value of the "confirmation_token" field.
-func (m *UserMutation) ClearConfirmationToken() {
-	m.confirmation_token = nil
-	m.clearedFields[user.FieldConfirmationToken] = struct{}{}
-}
-
-// ConfirmationTokenCleared returns if the "confirmation_token" field was cleared in this mutation.
-func (m *UserMutation) ConfirmationTokenCleared() bool {
-	_, ok := m.clearedFields[user.FieldConfirmationToken]
-	return ok
-}
-
-// ResetConfirmationToken resets all changes to the "confirmation_token" field.
-func (m *UserMutation) ResetConfirmationToken() {
-	m.confirmation_token = nil
-	delete(m.clearedFields, user.FieldConfirmationToken)
-}
-
-// SetConfirmedAt sets the "confirmed_at" field.
-func (m *UserMutation) SetConfirmedAt(t time.Time) {
-	m.confirmed_at = &t
-}
-
-// ConfirmedAt returns the value of the "confirmed_at" field in the mutation.
-func (m *UserMutation) ConfirmedAt() (r time.Time, exists bool) {
-	v := m.confirmed_at
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldConfirmedAt returns the old "confirmed_at" field's value of the User entity.
-// If the User object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *UserMutation) OldConfirmedAt(ctx context.Context) (v time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldConfirmedAt is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldConfirmedAt requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldConfirmedAt: %w", err)
-	}
-	return oldValue.ConfirmedAt, nil
-}
-
-// ClearConfirmedAt clears the value of the "confirmed_at" field.
-func (m *UserMutation) ClearConfirmedAt() {
-	m.confirmed_at = nil
-	m.clearedFields[user.FieldConfirmedAt] = struct{}{}
-}
-
-// ConfirmedAtCleared returns if the "confirmed_at" field was cleared in this mutation.
-func (m *UserMutation) ConfirmedAtCleared() bool {
-	_, ok := m.clearedFields[user.FieldConfirmedAt]
-	return ok
-}
-
-// ResetConfirmedAt resets all changes to the "confirmed_at" field.
-func (m *UserMutation) ResetConfirmedAt() {
-	m.confirmed_at = nil
-	delete(m.clearedFields, user.FieldConfirmedAt)
-}
-
-// SetConfirmationSentAt sets the "confirmation_sent_at" field.
-func (m *UserMutation) SetConfirmationSentAt(t time.Time) {
-	m.confirmation_sent_at = &t
-}
-
-// ConfirmationSentAt returns the value of the "confirmation_sent_at" field in the mutation.
-func (m *UserMutation) ConfirmationSentAt() (r time.Time, exists bool) {
-	v := m.confirmation_sent_at
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldConfirmationSentAt returns the old "confirmation_sent_at" field's value of the User entity.
-// If the User object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *UserMutation) OldConfirmationSentAt(ctx context.Context) (v time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldConfirmationSentAt is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldConfirmationSentAt requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldConfirmationSentAt: %w", err)
-	}
-	return oldValue.ConfirmationSentAt, nil
-}
-
-// ClearConfirmationSentAt clears the value of the "confirmation_sent_at" field.
-func (m *UserMutation) ClearConfirmationSentAt() {
-	m.confirmation_sent_at = nil
-	m.clearedFields[user.FieldConfirmationSentAt] = struct{}{}
-}
-
-// ConfirmationSentAtCleared returns if the "confirmation_sent_at" field was cleared in this mutation.
-func (m *UserMutation) ConfirmationSentAtCleared() bool {
-	_, ok := m.clearedFields[user.FieldConfirmationSentAt]
-	return ok
-}
-
-// ResetConfirmationSentAt resets all changes to the "confirmation_sent_at" field.
-func (m *UserMutation) ResetConfirmationSentAt() {
-	m.confirmation_sent_at = nil
-	delete(m.clearedFields, user.FieldConfirmationSentAt)
-}
-
-// SetUnconfirmedEmail sets the "unconfirmed_email" field.
-func (m *UserMutation) SetUnconfirmedEmail(s string) {
-	m.unconfirmed_email = &s
-}
-
-// UnconfirmedEmail returns the value of the "unconfirmed_email" field in the mutation.
-func (m *UserMutation) UnconfirmedEmail() (r string, exists bool) {
-	v := m.unconfirmed_email
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldUnconfirmedEmail returns the old "unconfirmed_email" field's value of the User entity.
-// If the User object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *UserMutation) OldUnconfirmedEmail(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldUnconfirmedEmail is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldUnconfirmedEmail requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldUnconfirmedEmail: %w", err)
-	}
-	return oldValue.UnconfirmedEmail, nil
-}
-
-// ClearUnconfirmedEmail clears the value of the "unconfirmed_email" field.
-func (m *UserMutation) ClearUnconfirmedEmail() {
-	m.unconfirmed_email = nil
-	m.clearedFields[user.FieldUnconfirmedEmail] = struct{}{}
-}
-
-// UnconfirmedEmailCleared returns if the "unconfirmed_email" field was cleared in this mutation.
-func (m *UserMutation) UnconfirmedEmailCleared() bool {
-	_, ok := m.clearedFields[user.FieldUnconfirmedEmail]
-	return ok
-}
-
-// ResetUnconfirmedEmail resets all changes to the "unconfirmed_email" field.
-func (m *UserMutation) ResetUnconfirmedEmail() {
-	m.unconfirmed_email = nil
-	delete(m.clearedFields, user.FieldUnconfirmedEmail)
+// ResetAge resets all changes to the "age" field.
+func (m *UserMutation) ResetAge() {
+	m.age = nil
+	m.addage = nil
 }
 
 // SetName sets the "name" field.
@@ -2671,360 +1007,63 @@ func (m *UserMutation) OldName(ctx context.Context) (v string, err error) {
 	return oldValue.Name, nil
 }
 
-// ClearName clears the value of the "name" field.
-func (m *UserMutation) ClearName() {
-	m.name = nil
-	m.clearedFields[user.FieldName] = struct{}{}
-}
-
-// NameCleared returns if the "name" field was cleared in this mutation.
-func (m *UserMutation) NameCleared() bool {
-	_, ok := m.clearedFields[user.FieldName]
-	return ok
-}
-
 // ResetName resets all changes to the "name" field.
 func (m *UserMutation) ResetName() {
 	m.name = nil
-	delete(m.clearedFields, user.FieldName)
 }
 
-// SetNickname sets the "nickname" field.
-func (m *UserMutation) SetNickname(s string) {
-	m.nickname = &s
-}
-
-// Nickname returns the value of the "nickname" field in the mutation.
-func (m *UserMutation) Nickname() (r string, exists bool) {
-	v := m.nickname
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldNickname returns the old "nickname" field's value of the User entity.
-// If the User object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *UserMutation) OldNickname(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldNickname is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldNickname requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldNickname: %w", err)
-	}
-	return oldValue.Nickname, nil
-}
-
-// ClearNickname clears the value of the "nickname" field.
-func (m *UserMutation) ClearNickname() {
-	m.nickname = nil
-	m.clearedFields[user.FieldNickname] = struct{}{}
-}
-
-// NicknameCleared returns if the "nickname" field was cleared in this mutation.
-func (m *UserMutation) NicknameCleared() bool {
-	_, ok := m.clearedFields[user.FieldNickname]
-	return ok
-}
-
-// ResetNickname resets all changes to the "nickname" field.
-func (m *UserMutation) ResetNickname() {
-	m.nickname = nil
-	delete(m.clearedFields, user.FieldNickname)
-}
-
-// SetImage sets the "image" field.
-func (m *UserMutation) SetImage(s string) {
-	m.image = &s
-}
-
-// Image returns the value of the "image" field in the mutation.
-func (m *UserMutation) Image() (r string, exists bool) {
-	v := m.image
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldImage returns the old "image" field's value of the User entity.
-// If the User object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *UserMutation) OldImage(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldImage is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldImage requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldImage: %w", err)
-	}
-	return oldValue.Image, nil
-}
-
-// ClearImage clears the value of the "image" field.
-func (m *UserMutation) ClearImage() {
-	m.image = nil
-	m.clearedFields[user.FieldImage] = struct{}{}
-}
-
-// ImageCleared returns if the "image" field was cleared in this mutation.
-func (m *UserMutation) ImageCleared() bool {
-	_, ok := m.clearedFields[user.FieldImage]
-	return ok
-}
-
-// ResetImage resets all changes to the "image" field.
-func (m *UserMutation) ResetImage() {
-	m.image = nil
-	delete(m.clearedFields, user.FieldImage)
-}
-
-// SetEmail sets the "email" field.
-func (m *UserMutation) SetEmail(s string) {
-	m.email = &s
-}
-
-// Email returns the value of the "email" field in the mutation.
-func (m *UserMutation) Email() (r string, exists bool) {
-	v := m.email
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldEmail returns the old "email" field's value of the User entity.
-// If the User object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *UserMutation) OldEmail(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldEmail is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldEmail requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldEmail: %w", err)
-	}
-	return oldValue.Email, nil
-}
-
-// ClearEmail clears the value of the "email" field.
-func (m *UserMutation) ClearEmail() {
-	m.email = nil
-	m.clearedFields[user.FieldEmail] = struct{}{}
-}
-
-// EmailCleared returns if the "email" field was cleared in this mutation.
-func (m *UserMutation) EmailCleared() bool {
-	_, ok := m.clearedFields[user.FieldEmail]
-	return ok
-}
-
-// ResetEmail resets all changes to the "email" field.
-func (m *UserMutation) ResetEmail() {
-	m.email = nil
-	delete(m.clearedFields, user.FieldEmail)
-}
-
-// SetTokens sets the "tokens" field.
-func (m *UserMutation) SetTokens(s []string) {
-	m.tokens = &s
-	m.appendtokens = nil
-}
-
-// Tokens returns the value of the "tokens" field in the mutation.
-func (m *UserMutation) Tokens() (r []string, exists bool) {
-	v := m.tokens
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldTokens returns the old "tokens" field's value of the User entity.
-// If the User object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *UserMutation) OldTokens(ctx context.Context) (v []string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldTokens is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldTokens requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldTokens: %w", err)
-	}
-	return oldValue.Tokens, nil
-}
-
-// AppendTokens adds s to the "tokens" field.
-func (m *UserMutation) AppendTokens(s []string) {
-	m.appendtokens = append(m.appendtokens, s...)
-}
-
-// AppendedTokens returns the list of values that were appended to the "tokens" field in this mutation.
-func (m *UserMutation) AppendedTokens() ([]string, bool) {
-	if len(m.appendtokens) == 0 {
-		return nil, false
-	}
-	return m.appendtokens, true
-}
-
-// ClearTokens clears the value of the "tokens" field.
-func (m *UserMutation) ClearTokens() {
-	m.tokens = nil
-	m.appendtokens = nil
-	m.clearedFields[user.FieldTokens] = struct{}{}
-}
-
-// TokensCleared returns if the "tokens" field was cleared in this mutation.
-func (m *UserMutation) TokensCleared() bool {
-	_, ok := m.clearedFields[user.FieldTokens]
-	return ok
-}
-
-// ResetTokens resets all changes to the "tokens" field.
-func (m *UserMutation) ResetTokens() {
-	m.tokens = nil
-	m.appendtokens = nil
-	delete(m.clearedFields, user.FieldTokens)
-}
-
-// SetCreatedAt sets the "created_at" field.
-func (m *UserMutation) SetCreatedAt(t time.Time) {
-	m.created_at = &t
-}
-
-// CreatedAt returns the value of the "created_at" field in the mutation.
-func (m *UserMutation) CreatedAt() (r time.Time, exists bool) {
-	v := m.created_at
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldCreatedAt returns the old "created_at" field's value of the User entity.
-// If the User object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *UserMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
-	}
-	return oldValue.CreatedAt, nil
-}
-
-// ResetCreatedAt resets all changes to the "created_at" field.
-func (m *UserMutation) ResetCreatedAt() {
-	m.created_at = nil
-}
-
-// SetUpdatedAt sets the "updated_at" field.
-func (m *UserMutation) SetUpdatedAt(t time.Time) {
-	m.updated_at = &t
-}
-
-// UpdatedAt returns the value of the "updated_at" field in the mutation.
-func (m *UserMutation) UpdatedAt() (r time.Time, exists bool) {
-	v := m.updated_at
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldUpdatedAt returns the old "updated_at" field's value of the User entity.
-// If the User object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *UserMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
-	}
-	return oldValue.UpdatedAt, nil
-}
-
-// ResetUpdatedAt resets all changes to the "updated_at" field.
-func (m *UserMutation) ResetUpdatedAt() {
-	m.updated_at = nil
-}
-
-// AddTodoIDs adds the "todos" edge to the Todo entity by ids.
-func (m *UserMutation) AddTodoIDs(ids ...int) {
-	if m.todos == nil {
-		m.todos = make(map[int]struct{})
+// AddCarIDs adds the "cars" edge to the Car entity by ids.
+func (m *UserMutation) AddCarIDs(ids ...int) {
+	if m.cars == nil {
+		m.cars = make(map[int]struct{})
 	}
 	for i := range ids {
-		m.todos[ids[i]] = struct{}{}
+		m.cars[ids[i]] = struct{}{}
 	}
 }
 
-// ClearTodos clears the "todos" edge to the Todo entity.
-func (m *UserMutation) ClearTodos() {
-	m.clearedtodos = true
+// ClearCars clears the "cars" edge to the Car entity.
+func (m *UserMutation) ClearCars() {
+	m.clearedcars = true
 }
 
-// TodosCleared reports if the "todos" edge to the Todo entity was cleared.
-func (m *UserMutation) TodosCleared() bool {
-	return m.clearedtodos
+// CarsCleared reports if the "cars" edge to the Car entity was cleared.
+func (m *UserMutation) CarsCleared() bool {
+	return m.clearedcars
 }
 
-// RemoveTodoIDs removes the "todos" edge to the Todo entity by IDs.
-func (m *UserMutation) RemoveTodoIDs(ids ...int) {
-	if m.removedtodos == nil {
-		m.removedtodos = make(map[int]struct{})
+// RemoveCarIDs removes the "cars" edge to the Car entity by IDs.
+func (m *UserMutation) RemoveCarIDs(ids ...int) {
+	if m.removedcars == nil {
+		m.removedcars = make(map[int]struct{})
 	}
 	for i := range ids {
-		delete(m.todos, ids[i])
-		m.removedtodos[ids[i]] = struct{}{}
+		delete(m.cars, ids[i])
+		m.removedcars[ids[i]] = struct{}{}
 	}
 }
 
-// RemovedTodos returns the removed IDs of the "todos" edge to the Todo entity.
-func (m *UserMutation) RemovedTodosIDs() (ids []int) {
-	for id := range m.removedtodos {
+// RemovedCars returns the removed IDs of the "cars" edge to the Car entity.
+func (m *UserMutation) RemovedCarsIDs() (ids []int) {
+	for id := range m.removedcars {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// TodosIDs returns the "todos" edge IDs in the mutation.
-func (m *UserMutation) TodosIDs() (ids []int) {
-	for id := range m.todos {
+// CarsIDs returns the "cars" edge IDs in the mutation.
+func (m *UserMutation) CarsIDs() (ids []int) {
+	for id := range m.cars {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// ResetTodos resets all changes to the "todos" edge.
-func (m *UserMutation) ResetTodos() {
-	m.todos = nil
-	m.clearedtodos = false
-	m.removedtodos = nil
+// ResetCars resets all changes to the "cars" edge.
+func (m *UserMutation) ResetCars() {
+	m.cars = nil
+	m.clearedcars = false
+	m.removedcars = nil
 }
 
 // Where appends a list predicates to the UserMutation builder.
@@ -3061,60 +1100,12 @@ func (m *UserMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserMutation) Fields() []string {
-	fields := make([]string, 0, 18)
-	if m.provider != nil {
-		fields = append(fields, user.FieldProvider)
-	}
-	if m.uid != nil {
-		fields = append(fields, user.FieldUID)
-	}
-	if m.encrypted_password != nil {
-		fields = append(fields, user.FieldEncryptedPassword)
-	}
-	if m.reset_password_token != nil {
-		fields = append(fields, user.FieldResetPasswordToken)
-	}
-	if m.reset_password_sent_at != nil {
-		fields = append(fields, user.FieldResetPasswordSentAt)
-	}
-	if m.allow_password_change != nil {
-		fields = append(fields, user.FieldAllowPasswordChange)
-	}
-	if m.remember_created_at != nil {
-		fields = append(fields, user.FieldRememberCreatedAt)
-	}
-	if m.confirmation_token != nil {
-		fields = append(fields, user.FieldConfirmationToken)
-	}
-	if m.confirmed_at != nil {
-		fields = append(fields, user.FieldConfirmedAt)
-	}
-	if m.confirmation_sent_at != nil {
-		fields = append(fields, user.FieldConfirmationSentAt)
-	}
-	if m.unconfirmed_email != nil {
-		fields = append(fields, user.FieldUnconfirmedEmail)
+	fields := make([]string, 0, 2)
+	if m.age != nil {
+		fields = append(fields, user.FieldAge)
 	}
 	if m.name != nil {
 		fields = append(fields, user.FieldName)
-	}
-	if m.nickname != nil {
-		fields = append(fields, user.FieldNickname)
-	}
-	if m.image != nil {
-		fields = append(fields, user.FieldImage)
-	}
-	if m.email != nil {
-		fields = append(fields, user.FieldEmail)
-	}
-	if m.tokens != nil {
-		fields = append(fields, user.FieldTokens)
-	}
-	if m.created_at != nil {
-		fields = append(fields, user.FieldCreatedAt)
-	}
-	if m.updated_at != nil {
-		fields = append(fields, user.FieldUpdatedAt)
 	}
 	return fields
 }
@@ -3124,42 +1115,10 @@ func (m *UserMutation) Fields() []string {
 // schema.
 func (m *UserMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case user.FieldProvider:
-		return m.Provider()
-	case user.FieldUID:
-		return m.UID()
-	case user.FieldEncryptedPassword:
-		return m.EncryptedPassword()
-	case user.FieldResetPasswordToken:
-		return m.ResetPasswordToken()
-	case user.FieldResetPasswordSentAt:
-		return m.ResetPasswordSentAt()
-	case user.FieldAllowPasswordChange:
-		return m.AllowPasswordChange()
-	case user.FieldRememberCreatedAt:
-		return m.RememberCreatedAt()
-	case user.FieldConfirmationToken:
-		return m.ConfirmationToken()
-	case user.FieldConfirmedAt:
-		return m.ConfirmedAt()
-	case user.FieldConfirmationSentAt:
-		return m.ConfirmationSentAt()
-	case user.FieldUnconfirmedEmail:
-		return m.UnconfirmedEmail()
+	case user.FieldAge:
+		return m.Age()
 	case user.FieldName:
 		return m.Name()
-	case user.FieldNickname:
-		return m.Nickname()
-	case user.FieldImage:
-		return m.Image()
-	case user.FieldEmail:
-		return m.Email()
-	case user.FieldTokens:
-		return m.Tokens()
-	case user.FieldCreatedAt:
-		return m.CreatedAt()
-	case user.FieldUpdatedAt:
-		return m.UpdatedAt()
 	}
 	return nil, false
 }
@@ -3169,42 +1128,10 @@ func (m *UserMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *UserMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case user.FieldProvider:
-		return m.OldProvider(ctx)
-	case user.FieldUID:
-		return m.OldUID(ctx)
-	case user.FieldEncryptedPassword:
-		return m.OldEncryptedPassword(ctx)
-	case user.FieldResetPasswordToken:
-		return m.OldResetPasswordToken(ctx)
-	case user.FieldResetPasswordSentAt:
-		return m.OldResetPasswordSentAt(ctx)
-	case user.FieldAllowPasswordChange:
-		return m.OldAllowPasswordChange(ctx)
-	case user.FieldRememberCreatedAt:
-		return m.OldRememberCreatedAt(ctx)
-	case user.FieldConfirmationToken:
-		return m.OldConfirmationToken(ctx)
-	case user.FieldConfirmedAt:
-		return m.OldConfirmedAt(ctx)
-	case user.FieldConfirmationSentAt:
-		return m.OldConfirmationSentAt(ctx)
-	case user.FieldUnconfirmedEmail:
-		return m.OldUnconfirmedEmail(ctx)
+	case user.FieldAge:
+		return m.OldAge(ctx)
 	case user.FieldName:
 		return m.OldName(ctx)
-	case user.FieldNickname:
-		return m.OldNickname(ctx)
-	case user.FieldImage:
-		return m.OldImage(ctx)
-	case user.FieldEmail:
-		return m.OldEmail(ctx)
-	case user.FieldTokens:
-		return m.OldTokens(ctx)
-	case user.FieldCreatedAt:
-		return m.OldCreatedAt(ctx)
-	case user.FieldUpdatedAt:
-		return m.OldUpdatedAt(ctx)
 	}
 	return nil, fmt.Errorf("unknown User field %s", name)
 }
@@ -3214,82 +1141,12 @@ func (m *UserMutation) OldField(ctx context.Context, name string) (ent.Value, er
 // type.
 func (m *UserMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case user.FieldProvider:
-		v, ok := value.(string)
+	case user.FieldAge:
+		v, ok := value.(int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetProvider(v)
-		return nil
-	case user.FieldUID:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetUID(v)
-		return nil
-	case user.FieldEncryptedPassword:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetEncryptedPassword(v)
-		return nil
-	case user.FieldResetPasswordToken:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetResetPasswordToken(v)
-		return nil
-	case user.FieldResetPasswordSentAt:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetResetPasswordSentAt(v)
-		return nil
-	case user.FieldAllowPasswordChange:
-		v, ok := value.(bool)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetAllowPasswordChange(v)
-		return nil
-	case user.FieldRememberCreatedAt:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetRememberCreatedAt(v)
-		return nil
-	case user.FieldConfirmationToken:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetConfirmationToken(v)
-		return nil
-	case user.FieldConfirmedAt:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetConfirmedAt(v)
-		return nil
-	case user.FieldConfirmationSentAt:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetConfirmationSentAt(v)
-		return nil
-	case user.FieldUnconfirmedEmail:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetUnconfirmedEmail(v)
+		m.SetAge(v)
 		return nil
 	case user.FieldName:
 		v, ok := value.(string)
@@ -3298,48 +1155,6 @@ func (m *UserMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetName(v)
 		return nil
-	case user.FieldNickname:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetNickname(v)
-		return nil
-	case user.FieldImage:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetImage(v)
-		return nil
-	case user.FieldEmail:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetEmail(v)
-		return nil
-	case user.FieldTokens:
-		v, ok := value.([]string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetTokens(v)
-		return nil
-	case user.FieldCreatedAt:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetCreatedAt(v)
-		return nil
-	case user.FieldUpdatedAt:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetUpdatedAt(v)
-		return nil
 	}
 	return fmt.Errorf("unknown User field %s", name)
 }
@@ -3347,13 +1162,21 @@ func (m *UserMutation) SetField(name string, value ent.Value) error {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *UserMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	if m.addage != nil {
+		fields = append(fields, user.FieldAge)
+	}
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *UserMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case user.FieldAge:
+		return m.AddedAge()
+	}
 	return nil, false
 }
 
@@ -3362,6 +1185,13 @@ func (m *UserMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *UserMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case user.FieldAge:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAge(v)
+		return nil
 	}
 	return fmt.Errorf("unknown User numeric field %s", name)
 }
@@ -3369,47 +1199,7 @@ func (m *UserMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *UserMutation) ClearedFields() []string {
-	var fields []string
-	if m.FieldCleared(user.FieldResetPasswordToken) {
-		fields = append(fields, user.FieldResetPasswordToken)
-	}
-	if m.FieldCleared(user.FieldResetPasswordSentAt) {
-		fields = append(fields, user.FieldResetPasswordSentAt)
-	}
-	if m.FieldCleared(user.FieldAllowPasswordChange) {
-		fields = append(fields, user.FieldAllowPasswordChange)
-	}
-	if m.FieldCleared(user.FieldRememberCreatedAt) {
-		fields = append(fields, user.FieldRememberCreatedAt)
-	}
-	if m.FieldCleared(user.FieldConfirmationToken) {
-		fields = append(fields, user.FieldConfirmationToken)
-	}
-	if m.FieldCleared(user.FieldConfirmedAt) {
-		fields = append(fields, user.FieldConfirmedAt)
-	}
-	if m.FieldCleared(user.FieldConfirmationSentAt) {
-		fields = append(fields, user.FieldConfirmationSentAt)
-	}
-	if m.FieldCleared(user.FieldUnconfirmedEmail) {
-		fields = append(fields, user.FieldUnconfirmedEmail)
-	}
-	if m.FieldCleared(user.FieldName) {
-		fields = append(fields, user.FieldName)
-	}
-	if m.FieldCleared(user.FieldNickname) {
-		fields = append(fields, user.FieldNickname)
-	}
-	if m.FieldCleared(user.FieldImage) {
-		fields = append(fields, user.FieldImage)
-	}
-	if m.FieldCleared(user.FieldEmail) {
-		fields = append(fields, user.FieldEmail)
-	}
-	if m.FieldCleared(user.FieldTokens) {
-		fields = append(fields, user.FieldTokens)
-	}
-	return fields
+	return nil
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -3422,47 +1212,6 @@ func (m *UserMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *UserMutation) ClearField(name string) error {
-	switch name {
-	case user.FieldResetPasswordToken:
-		m.ClearResetPasswordToken()
-		return nil
-	case user.FieldResetPasswordSentAt:
-		m.ClearResetPasswordSentAt()
-		return nil
-	case user.FieldAllowPasswordChange:
-		m.ClearAllowPasswordChange()
-		return nil
-	case user.FieldRememberCreatedAt:
-		m.ClearRememberCreatedAt()
-		return nil
-	case user.FieldConfirmationToken:
-		m.ClearConfirmationToken()
-		return nil
-	case user.FieldConfirmedAt:
-		m.ClearConfirmedAt()
-		return nil
-	case user.FieldConfirmationSentAt:
-		m.ClearConfirmationSentAt()
-		return nil
-	case user.FieldUnconfirmedEmail:
-		m.ClearUnconfirmedEmail()
-		return nil
-	case user.FieldName:
-		m.ClearName()
-		return nil
-	case user.FieldNickname:
-		m.ClearNickname()
-		return nil
-	case user.FieldImage:
-		m.ClearImage()
-		return nil
-	case user.FieldEmail:
-		m.ClearEmail()
-		return nil
-	case user.FieldTokens:
-		m.ClearTokens()
-		return nil
-	}
 	return fmt.Errorf("unknown User nullable field %s", name)
 }
 
@@ -3470,59 +1219,11 @@ func (m *UserMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *UserMutation) ResetField(name string) error {
 	switch name {
-	case user.FieldProvider:
-		m.ResetProvider()
-		return nil
-	case user.FieldUID:
-		m.ResetUID()
-		return nil
-	case user.FieldEncryptedPassword:
-		m.ResetEncryptedPassword()
-		return nil
-	case user.FieldResetPasswordToken:
-		m.ResetResetPasswordToken()
-		return nil
-	case user.FieldResetPasswordSentAt:
-		m.ResetResetPasswordSentAt()
-		return nil
-	case user.FieldAllowPasswordChange:
-		m.ResetAllowPasswordChange()
-		return nil
-	case user.FieldRememberCreatedAt:
-		m.ResetRememberCreatedAt()
-		return nil
-	case user.FieldConfirmationToken:
-		m.ResetConfirmationToken()
-		return nil
-	case user.FieldConfirmedAt:
-		m.ResetConfirmedAt()
-		return nil
-	case user.FieldConfirmationSentAt:
-		m.ResetConfirmationSentAt()
-		return nil
-	case user.FieldUnconfirmedEmail:
-		m.ResetUnconfirmedEmail()
+	case user.FieldAge:
+		m.ResetAge()
 		return nil
 	case user.FieldName:
 		m.ResetName()
-		return nil
-	case user.FieldNickname:
-		m.ResetNickname()
-		return nil
-	case user.FieldImage:
-		m.ResetImage()
-		return nil
-	case user.FieldEmail:
-		m.ResetEmail()
-		return nil
-	case user.FieldTokens:
-		m.ResetTokens()
-		return nil
-	case user.FieldCreatedAt:
-		m.ResetCreatedAt()
-		return nil
-	case user.FieldUpdatedAt:
-		m.ResetUpdatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown User field %s", name)
@@ -3531,8 +1232,8 @@ func (m *UserMutation) ResetField(name string) error {
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
 	edges := make([]string, 0, 1)
-	if m.todos != nil {
-		edges = append(edges, user.EdgeTodos)
+	if m.cars != nil {
+		edges = append(edges, user.EdgeCars)
 	}
 	return edges
 }
@@ -3541,9 +1242,9 @@ func (m *UserMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *UserMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case user.EdgeTodos:
-		ids := make([]ent.Value, 0, len(m.todos))
-		for id := range m.todos {
+	case user.EdgeCars:
+		ids := make([]ent.Value, 0, len(m.cars))
+		for id := range m.cars {
 			ids = append(ids, id)
 		}
 		return ids
@@ -3554,8 +1255,8 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
 	edges := make([]string, 0, 1)
-	if m.removedtodos != nil {
-		edges = append(edges, user.EdgeTodos)
+	if m.removedcars != nil {
+		edges = append(edges, user.EdgeCars)
 	}
 	return edges
 }
@@ -3564,9 +1265,9 @@ func (m *UserMutation) RemovedEdges() []string {
 // the given name in this mutation.
 func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
-	case user.EdgeTodos:
-		ids := make([]ent.Value, 0, len(m.removedtodos))
-		for id := range m.removedtodos {
+	case user.EdgeCars:
+		ids := make([]ent.Value, 0, len(m.removedcars))
+		for id := range m.removedcars {
 			ids = append(ids, id)
 		}
 		return ids
@@ -3577,8 +1278,8 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
 	edges := make([]string, 0, 1)
-	if m.clearedtodos {
-		edges = append(edges, user.EdgeTodos)
+	if m.clearedcars {
+		edges = append(edges, user.EdgeCars)
 	}
 	return edges
 }
@@ -3587,8 +1288,8 @@ func (m *UserMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *UserMutation) EdgeCleared(name string) bool {
 	switch name {
-	case user.EdgeTodos:
-		return m.clearedtodos
+	case user.EdgeCars:
+		return m.clearedcars
 	}
 	return false
 }
@@ -3605,8 +1306,8 @@ func (m *UserMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *UserMutation) ResetEdge(name string) error {
 	switch name {
-	case user.EdgeTodos:
-		m.ResetTodos()
+	case user.EdgeCars:
+		m.ResetCars()
 		return nil
 	}
 	return fmt.Errorf("unknown User edge %s", name)

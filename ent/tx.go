@@ -12,14 +12,10 @@ import (
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
 	config
-	// ArInternalMetadatum is the client for interacting with the ArInternalMetadatum builders.
-	ArInternalMetadatum *ArInternalMetadatumClient
-	// SchemaMigration is the client for interacting with the SchemaMigration builders.
-	SchemaMigration *SchemaMigrationClient
-	// Todo is the client for interacting with the Todo builders.
-	Todo *TodoClient
-	// TodoStatus is the client for interacting with the TodoStatus builders.
-	TodoStatus *TodoStatusClient
+	// Car is the client for interacting with the Car builders.
+	Car *CarClient
+	// Group is the client for interacting with the Group builders.
+	Group *GroupClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 
@@ -153,10 +149,8 @@ func (tx *Tx) Client() *Client {
 }
 
 func (tx *Tx) init() {
-	tx.ArInternalMetadatum = NewArInternalMetadatumClient(tx.config)
-	tx.SchemaMigration = NewSchemaMigrationClient(tx.config)
-	tx.Todo = NewTodoClient(tx.config)
-	tx.TodoStatus = NewTodoStatusClient(tx.config)
+	tx.Car = NewCarClient(tx.config)
+	tx.Group = NewGroupClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 }
 
@@ -167,7 +161,7 @@ func (tx *Tx) init() {
 // of them in order to commit or rollback the transaction.
 //
 // If a closed transaction is embedded in one of the generated entities, and the entity
-// applies a query, for example: ArInternalMetadatum.QueryXXX(), the query will be executed
+// applies a query, for example: Car.QueryXXX(), the query will be executed
 // through the driver which created this transaction.
 //
 // Note that txDriver is not goroutine safe.

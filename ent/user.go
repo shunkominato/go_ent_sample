@@ -3,11 +3,9 @@
 package ent
 
 import (
-	"encoding/json"
 	"fmt"
 	"go-gql-sample/app/ent/user"
 	"strings"
-	"time"
 
 	"entgo.io/ent/dialect/sql"
 )
@@ -17,42 +15,10 @@ type User struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
-	// Provider holds the value of the "provider" field.
-	Provider string `json:"provider,omitempty"`
-	// UID holds the value of the "uid" field.
-	UID string `json:"uid,omitempty"`
-	// EncryptedPassword holds the value of the "encrypted_password" field.
-	EncryptedPassword string `json:"encrypted_password,omitempty"`
-	// ResetPasswordToken holds the value of the "reset_password_token" field.
-	ResetPasswordToken string `json:"reset_password_token,omitempty"`
-	// ResetPasswordSentAt holds the value of the "reset_password_sent_at" field.
-	ResetPasswordSentAt time.Time `json:"reset_password_sent_at,omitempty"`
-	// AllowPasswordChange holds the value of the "allow_password_change" field.
-	AllowPasswordChange bool `json:"allow_password_change,omitempty"`
-	// RememberCreatedAt holds the value of the "remember_created_at" field.
-	RememberCreatedAt time.Time `json:"remember_created_at,omitempty"`
-	// ConfirmationToken holds the value of the "confirmation_token" field.
-	ConfirmationToken string `json:"confirmation_token,omitempty"`
-	// ConfirmedAt holds the value of the "confirmed_at" field.
-	ConfirmedAt time.Time `json:"confirmed_at,omitempty"`
-	// ConfirmationSentAt holds the value of the "confirmation_sent_at" field.
-	ConfirmationSentAt time.Time `json:"confirmation_sent_at,omitempty"`
-	// UnconfirmedEmail holds the value of the "unconfirmed_email" field.
-	UnconfirmedEmail string `json:"unconfirmed_email,omitempty"`
+	// Age holds the value of the "age" field.
+	Age int `json:"age,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
-	// Nickname holds the value of the "nickname" field.
-	Nickname string `json:"nickname,omitempty"`
-	// Image holds the value of the "image" field.
-	Image string `json:"image,omitempty"`
-	// Email holds the value of the "email" field.
-	Email string `json:"email,omitempty"`
-	// Tokens holds the value of the "tokens" field.
-	Tokens []string `json:"tokens,omitempty"`
-	// CreatedAt holds the value of the "created_at" field.
-	CreatedAt time.Time `json:"created_at,omitempty"`
-	// UpdatedAt holds the value of the "updated_at" field.
-	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the UserQuery when eager-loading is set.
 	Edges UserEdges `json:"edges"`
@@ -60,20 +26,20 @@ type User struct {
 
 // UserEdges holds the relations/edges for other nodes in the graph.
 type UserEdges struct {
-	// Todos holds the value of the todos edge.
-	Todos []*Todo `json:"todos,omitempty"`
+	// Cars holds the value of the cars edge.
+	Cars []*Car `json:"cars,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [1]bool
 }
 
-// TodosOrErr returns the Todos value or an error if the edge
+// CarsOrErr returns the Cars value or an error if the edge
 // was not loaded in eager-loading.
-func (e UserEdges) TodosOrErr() ([]*Todo, error) {
+func (e UserEdges) CarsOrErr() ([]*Car, error) {
 	if e.loadedTypes[0] {
-		return e.Todos, nil
+		return e.Cars, nil
 	}
-	return nil, &NotLoadedError{edge: "todos"}
+	return nil, &NotLoadedError{edge: "cars"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -81,16 +47,10 @@ func (*User) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case user.FieldTokens:
-			values[i] = new([]byte)
-		case user.FieldAllowPasswordChange:
-			values[i] = new(sql.NullBool)
-		case user.FieldID:
+		case user.FieldID, user.FieldAge:
 			values[i] = new(sql.NullInt64)
-		case user.FieldProvider, user.FieldUID, user.FieldEncryptedPassword, user.FieldResetPasswordToken, user.FieldConfirmationToken, user.FieldUnconfirmedEmail, user.FieldName, user.FieldNickname, user.FieldImage, user.FieldEmail:
+		case user.FieldName:
 			values[i] = new(sql.NullString)
-		case user.FieldResetPasswordSentAt, user.FieldRememberCreatedAt, user.FieldConfirmedAt, user.FieldConfirmationSentAt, user.FieldCreatedAt, user.FieldUpdatedAt:
-			values[i] = new(sql.NullTime)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type User", columns[i])
 		}
@@ -112,71 +72,11 @@ func (u *User) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			u.ID = int(value.Int64)
-		case user.FieldProvider:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field provider", values[i])
+		case user.FieldAge:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field age", values[i])
 			} else if value.Valid {
-				u.Provider = value.String
-			}
-		case user.FieldUID:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field uid", values[i])
-			} else if value.Valid {
-				u.UID = value.String
-			}
-		case user.FieldEncryptedPassword:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field encrypted_password", values[i])
-			} else if value.Valid {
-				u.EncryptedPassword = value.String
-			}
-		case user.FieldResetPasswordToken:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field reset_password_token", values[i])
-			} else if value.Valid {
-				u.ResetPasswordToken = value.String
-			}
-		case user.FieldResetPasswordSentAt:
-			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field reset_password_sent_at", values[i])
-			} else if value.Valid {
-				u.ResetPasswordSentAt = value.Time
-			}
-		case user.FieldAllowPasswordChange:
-			if value, ok := values[i].(*sql.NullBool); !ok {
-				return fmt.Errorf("unexpected type %T for field allow_password_change", values[i])
-			} else if value.Valid {
-				u.AllowPasswordChange = value.Bool
-			}
-		case user.FieldRememberCreatedAt:
-			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field remember_created_at", values[i])
-			} else if value.Valid {
-				u.RememberCreatedAt = value.Time
-			}
-		case user.FieldConfirmationToken:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field confirmation_token", values[i])
-			} else if value.Valid {
-				u.ConfirmationToken = value.String
-			}
-		case user.FieldConfirmedAt:
-			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field confirmed_at", values[i])
-			} else if value.Valid {
-				u.ConfirmedAt = value.Time
-			}
-		case user.FieldConfirmationSentAt:
-			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field confirmation_sent_at", values[i])
-			} else if value.Valid {
-				u.ConfirmationSentAt = value.Time
-			}
-		case user.FieldUnconfirmedEmail:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field unconfirmed_email", values[i])
-			} else if value.Valid {
-				u.UnconfirmedEmail = value.String
+				u.Age = int(value.Int64)
 			}
 		case user.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -184,52 +84,14 @@ func (u *User) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				u.Name = value.String
 			}
-		case user.FieldNickname:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field nickname", values[i])
-			} else if value.Valid {
-				u.Nickname = value.String
-			}
-		case user.FieldImage:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field image", values[i])
-			} else if value.Valid {
-				u.Image = value.String
-			}
-		case user.FieldEmail:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field email", values[i])
-			} else if value.Valid {
-				u.Email = value.String
-			}
-		case user.FieldTokens:
-			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field tokens", values[i])
-			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &u.Tokens); err != nil {
-					return fmt.Errorf("unmarshal field tokens: %w", err)
-				}
-			}
-		case user.FieldCreatedAt:
-			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field created_at", values[i])
-			} else if value.Valid {
-				u.CreatedAt = value.Time
-			}
-		case user.FieldUpdatedAt:
-			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
-			} else if value.Valid {
-				u.UpdatedAt = value.Time
-			}
 		}
 	}
 	return nil
 }
 
-// QueryTodos queries the "todos" edge of the User entity.
-func (u *User) QueryTodos() *TodoQuery {
-	return NewUserClient(u.config).QueryTodos(u)
+// QueryCars queries the "cars" edge of the User entity.
+func (u *User) QueryCars() *CarQuery {
+	return NewUserClient(u.config).QueryCars(u)
 }
 
 // Update returns a builder for updating this User.
@@ -255,59 +117,11 @@ func (u *User) String() string {
 	var builder strings.Builder
 	builder.WriteString("User(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", u.ID))
-	builder.WriteString("provider=")
-	builder.WriteString(u.Provider)
-	builder.WriteString(", ")
-	builder.WriteString("uid=")
-	builder.WriteString(u.UID)
-	builder.WriteString(", ")
-	builder.WriteString("encrypted_password=")
-	builder.WriteString(u.EncryptedPassword)
-	builder.WriteString(", ")
-	builder.WriteString("reset_password_token=")
-	builder.WriteString(u.ResetPasswordToken)
-	builder.WriteString(", ")
-	builder.WriteString("reset_password_sent_at=")
-	builder.WriteString(u.ResetPasswordSentAt.Format(time.ANSIC))
-	builder.WriteString(", ")
-	builder.WriteString("allow_password_change=")
-	builder.WriteString(fmt.Sprintf("%v", u.AllowPasswordChange))
-	builder.WriteString(", ")
-	builder.WriteString("remember_created_at=")
-	builder.WriteString(u.RememberCreatedAt.Format(time.ANSIC))
-	builder.WriteString(", ")
-	builder.WriteString("confirmation_token=")
-	builder.WriteString(u.ConfirmationToken)
-	builder.WriteString(", ")
-	builder.WriteString("confirmed_at=")
-	builder.WriteString(u.ConfirmedAt.Format(time.ANSIC))
-	builder.WriteString(", ")
-	builder.WriteString("confirmation_sent_at=")
-	builder.WriteString(u.ConfirmationSentAt.Format(time.ANSIC))
-	builder.WriteString(", ")
-	builder.WriteString("unconfirmed_email=")
-	builder.WriteString(u.UnconfirmedEmail)
+	builder.WriteString("age=")
+	builder.WriteString(fmt.Sprintf("%v", u.Age))
 	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(u.Name)
-	builder.WriteString(", ")
-	builder.WriteString("nickname=")
-	builder.WriteString(u.Nickname)
-	builder.WriteString(", ")
-	builder.WriteString("image=")
-	builder.WriteString(u.Image)
-	builder.WriteString(", ")
-	builder.WriteString("email=")
-	builder.WriteString(u.Email)
-	builder.WriteString(", ")
-	builder.WriteString("tokens=")
-	builder.WriteString(fmt.Sprintf("%v", u.Tokens))
-	builder.WriteString(", ")
-	builder.WriteString("created_at=")
-	builder.WriteString(u.CreatedAt.Format(time.ANSIC))
-	builder.WriteString(", ")
-	builder.WriteString("updated_at=")
-	builder.WriteString(u.UpdatedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }
