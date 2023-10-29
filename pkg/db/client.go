@@ -15,6 +15,11 @@ type Database struct {
 	client *ent.Client
 }
 
+func GetDataSourceName() string {
+	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?search_path=public&sslmode=disable",
+	os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"),os.Getenv("DB_HOST"), os.Getenv("DB_PORT"),  os.Getenv("DB_DB_NAME"))
+}
+
 func NewDatabase() (*Database, error) {
 	client, err := ent.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_DB_NAME")))

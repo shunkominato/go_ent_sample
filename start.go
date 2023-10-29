@@ -4,12 +4,17 @@ import (
 	"context"
 	"fmt"
 	"go-gql-sample/app/ent"
+	"go-gql-sample/app/ent/migrate"
 	"go-gql-sample/app/ent/user"
 	"go-gql-sample/app/pkg/config"
 	"go-gql-sample/app/pkg/db"
 	"log"
+	"os"
 	"time"
 
+	atlas "ariga.io/atlas/sql/migrate"
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/sql/schema"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
@@ -133,12 +138,36 @@ func main() {
 	godotenv.Load(".env")
 
 	config.SetConfig()
-	db, _ := db.NewDatabase()	
-	client := db.EntClient()
-	defer client.Close()
+	// db, _ := db.NewDatabase()	
+	// client := db.EntClient()
+	// defer client.Close()
 
-	if err := client.Schema.Create(context.Background()); err != nil {
-		log.Fatalf("failed creating schema resources: %v", err)
+	// if err := client.Schema.Create(context.Background()); err != nil {
+	// 	log.Fatalf("failed creating schema resources: %v", err)
+	// }
+	// QueryCarUsers(context.Background(), client)
+
+	ctx := context.Background()
+
+	// Create a local migration directory able to understand Atlas migration file format for replay.
+	dir, err := atlas.NewLocalDir("ent/migrate/migrations")
+	if err != nil {
+		log.Fatalf("failed creating atlas migration directory: %v", err)
 	}
-	QueryCarUsers(context.Background(), client)
+
+    // Migrate diff options.
+	opts := []schema.MigrateOption{
+		schema.WithDir(dir),                         // provide migration directory
+		schema.WithMigrationMode(schema.ModeInspect), // provide migration mode
+		schema.WithDialect(dialect.Postgres),           // Ent dialect to use
+		schema.WithFormatter(atlas.DefaultFormatter),
+	}
+
+	dataSourceName := db.GetDataSourceName()
+
+	// Generate migrations using Atlas support for MySQL (note the Ent dialect option passed above).
+	err = migrate.NamedDiff(ctx, dataSourceName, os.Args[1], opts...)
+	if err != nil {
+			log.Fatalf("failed generating migration file: %v", err)
+	}
 }
