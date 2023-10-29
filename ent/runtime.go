@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"go-gql-sample/app/ent/company"
 	"go-gql-sample/app/ent/group"
 	"go-gql-sample/app/ent/schema"
 	"go-gql-sample/app/ent/user"
@@ -12,6 +13,12 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	companyFields := schema.Company{}.Fields()
+	_ = companyFields
+	// companyDescName is the schema descriptor for name field.
+	companyDescName := companyFields[0].Descriptor()
+	// company.DefaultName holds the default value on creation for the name field.
+	company.DefaultName = companyDescName.Default.(string)
 	groupFields := schema.Group{}.Fields()
 	_ = groupFields
 	// groupDescName is the schema descriptor for name field.

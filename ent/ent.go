@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"go-gql-sample/app/ent/car"
+	"go-gql-sample/app/ent/company"
 	"go-gql-sample/app/ent/group"
 	"go-gql-sample/app/ent/user"
 	"reflect"
@@ -67,9 +68,10 @@ type OrderFunc func(*sql.Selector)
 // columnChecker returns a function indicates if the column exists in the given column.
 func columnChecker(table string) func(string) error {
 	checks := map[string]func(string) bool{
-		car.Table:   car.ValidColumn,
-		group.Table: group.ValidColumn,
-		user.Table:  user.ValidColumn,
+		car.Table:     car.ValidColumn,
+		company.Table: company.ValidColumn,
+		group.Table:   group.ValidColumn,
+		user.Table:    user.ValidColumn,
 	}
 	check, ok := checks[table]
 	if !ok {
