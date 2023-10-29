@@ -106,8 +106,15 @@ func CreateCars(ctx context.Context, client *ent.Client) (*ent.User, error) {
 	return a8m, nil
 }
 
-func QueryCarUsers(ctx context.Context, a8m *ent.User) error {
-	cars, err := a8m.QueryCars().All(ctx)
+func QueryCarUsers(ctx context.Context, client *ent.Client) error {
+	u, err := client.User.
+	Query().
+	Where(user.Name("a8m")).
+	// `Only` fails if no user found,
+	// or more than 1 user returned.
+	Only(ctx)
+
+	cars, err := u.QueryCars().All(ctx)
 	if err != nil {
 			return fmt.Errorf("failed querying user cars: %w", err)
 	}
@@ -133,5 +140,5 @@ func main() {
 	if err := client.Schema.Create(context.Background()); err != nil {
 		log.Fatalf("failed creating schema resources: %v", err)
 	}
-	CreateCars(context.Background(), client)
+	QueryCarUsers(context.Background(), client)
 }

@@ -20,4 +20,6 @@ COPY . $APP_ROOT
 # Air: hot reload
 RUN go install github.com/cosmtrek/air@latest
 
+RUN curl -sSf https://atlasgo.sh | sh
+
 EXPOSE 8080
