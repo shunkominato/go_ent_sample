@@ -6,6 +6,7 @@ import (
 	"go-gql-sample/app/ent/company"
 	"go-gql-sample/app/ent/group"
 	"go-gql-sample/app/ent/schema"
+	"go-gql-sample/app/ent/team"
 	"go-gql-sample/app/ent/user"
 )
 
@@ -25,6 +26,12 @@ func init() {
 	groupDescName := groupFields[0].Descriptor()
 	// group.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	group.NameValidator = groupDescName.Validators[0].(func(string) error)
+	teamFields := schema.Team{}.Fields()
+	_ = teamFields
+	// teamDescName is the schema descriptor for name field.
+	teamDescName := teamFields[0].Descriptor()
+	// team.DefaultName holds the default value on creation for the name field.
+	team.DefaultName = teamDescName.Default.(string)
 	userFields := schema.User{}.Fields()
 	_ = userFields
 	// userDescAge is the schema descriptor for age field.

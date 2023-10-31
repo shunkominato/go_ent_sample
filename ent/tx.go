@@ -18,6 +18,8 @@ type Tx struct {
 	Company *CompanyClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
+	// Team is the client for interacting with the Team builders.
+	Team *TeamClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 
@@ -154,6 +156,7 @@ func (tx *Tx) init() {
 	tx.Car = NewCarClient(tx.config)
 	tx.Company = NewCompanyClient(tx.config)
 	tx.Group = NewGroupClient(tx.config)
+	tx.Team = NewTeamClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 }
 

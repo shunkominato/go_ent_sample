@@ -18,7 +18,7 @@ import (
 type CompanyQuery struct {
 	config
 	ctx        *QueryContext
-	order      []OrderFunc
+	order      []company.OrderOption
 	inters     []Interceptor
 	predicates []predicate.Company
 	// intermediate query (i.e. traversal path).
@@ -52,7 +52,7 @@ func (cq *CompanyQuery) Unique(unique bool) *CompanyQuery {
 }
 
 // Order specifies how the records should be ordered.
-func (cq *CompanyQuery) Order(o ...OrderFunc) *CompanyQuery {
+func (cq *CompanyQuery) Order(o ...company.OrderOption) *CompanyQuery {
 	cq.order = append(cq.order, o...)
 	return cq
 }
@@ -246,7 +246,7 @@ func (cq *CompanyQuery) Clone() *CompanyQuery {
 	return &CompanyQuery{
 		config:     cq.config,
 		ctx:        cq.ctx.Clone(),
-		order:      append([]OrderFunc{}, cq.order...),
+		order:      append([]company.OrderOption{}, cq.order...),
 		inters:     append([]Interceptor{}, cq.inters...),
 		predicates: append([]predicate.Company{}, cq.predicates...),
 		// clone intermediate query.

@@ -48,7 +48,7 @@ func (cu *CompanyUpdate) Mutation() *CompanyMutation {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (cu *CompanyUpdate) Save(ctx context.Context) (int, error) {
-	return withHooks[int, CompanyMutation](ctx, cu.sqlSave, cu.mutation, cu.hooks)
+	return withHooks(ctx, cu.sqlSave, cu.mutation, cu.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -139,7 +139,7 @@ func (cuo *CompanyUpdateOne) Select(field string, fields ...string) *CompanyUpda
 
 // Save executes the query and returns the updated Company entity.
 func (cuo *CompanyUpdateOne) Save(ctx context.Context) (*Company, error) {
-	return withHooks[*Company, CompanyMutation](ctx, cuo.sqlSave, cuo.mutation, cuo.hooks)
+	return withHooks(ctx, cuo.sqlSave, cuo.mutation, cuo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
