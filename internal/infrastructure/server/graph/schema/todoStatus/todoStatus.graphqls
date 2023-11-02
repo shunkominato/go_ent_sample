@@ -1,4 +1,0 @@
-type TodoStatus implements Node {
-  id: ID!
-  status: String!
-}

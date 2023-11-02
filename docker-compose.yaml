@@ -16,6 +16,10 @@ services:
     volumes: #マウントディレクトリ
       - .:/go/src/app
       # - go-data:/go
+    security_opt:
+      - apparmor:unconfined
+    cap_add:
+      - SYS_PTRACE
   db:
     image: postgres:14.4-alpine
     environment:
