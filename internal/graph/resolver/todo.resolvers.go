@@ -10,11 +10,14 @@ import (
 	"fmt"
 	"go-gql-sample/app/internal/graph"
 	"go-gql-sample/app/internal/graph/model"
+	"log"
 	"math/big"
+	"time"
 )
 
 // CreateTodo is the resolver for the createTodo field.
 func (r *mutationResolver) CreateTodo(ctx context.Context, input model.NewTodo) (*model.Todo, error) {
+	time.Sleep(3 * time.Second) 
 	randNumber, _ := rand.Int(rand.Reader, big.NewInt(100))
 	todo := &model.Todo{
 		Text: input.Text,
@@ -27,11 +30,13 @@ func (r *mutationResolver) CreateTodo(ctx context.Context, input model.NewTodo) 
 
 // Todos is the resolver for the todos field.
 func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
+	time.Sleep(3 * time.Second) 
 	return r.todos, nil
 }
 
 // User is the resolver for the user field.
 func (r *todoResolver) User(ctx context.Context, obj *model.Todo) (*model.User, error) {
+	log.Printf("------------user-----------")
 	return &model.User{ID: obj.User.ID, Name: "user " + obj.User.ID}, nil
 }
 
