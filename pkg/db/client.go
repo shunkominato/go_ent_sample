@@ -26,6 +26,7 @@ func NewDatabase() (*Database, error) {
 	if err != nil {
 			return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
+	fmt.Println("DB Connected")
 	return &Database{client: client}, nil
 }
 

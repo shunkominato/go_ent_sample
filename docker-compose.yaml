@@ -21,7 +21,7 @@ services:
     cap_add:
       - SYS_PTRACE
   db:
-    image: postgres:14.4-alpine
+    image: postgres:16.0-alpine3.18
     environment:
       POSTGRES_DB: engin
       POSTGRES_USER: postgres
