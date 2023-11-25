@@ -6,38 +6,96 @@ package resolver
 
 import (
 	"context"
-	"crypto/rand"
-	"fmt"
+	"go-gql-sample/app/internal/application/usecase/todo"
+	"go-gql-sample/app/internal/application/usecase/user"
+	todoDomain "go-gql-sample/app/internal/dmain/entity/todo"
 	"go-gql-sample/app/internal/graph"
 	"go-gql-sample/app/internal/graph/model"
+	"go-gql-sample/app/internal/graph/validation"
+	"go-gql-sample/app/internal/infrastructure/persistence"
 	"log"
-	"math/big"
-	"time"
+
+	"github.com/samber/lo"
 )
 
 // CreateTodo is the resolver for the createTodo field.
 func (r *mutationResolver) CreateTodo(ctx context.Context, input model.NewTodo) (*model.Todo, error) {
-	time.Sleep(3 * time.Second) 
-	randNumber, _ := rand.Int(rand.Reader, big.NewInt(100))
-	todo := &model.Todo{
-		Text: input.Text,
-		ID:   fmt.Sprintf("T%d", randNumber),
-		User: &model.User{ID: input.UserID, Name: "user " + input.UserID},
+	if err := validation.ValidateInputModel(input); err != nil {
+		return nil, err
 	}
-	r.todos = append(r.todos, todo)
-	return todo, nil
+
+	td := &todoDomain.SaveTodoInputDto{
+		Text:   input.Text,
+		UserID: input.UserID,
+	}
+	todoRepo := persistence.NewTodoRepository(r.client)
+	todoUsecase := todo.NewTodoUsecase(todoRepo)
+
+	todo, err := todoUsecase.Create(ctx, td)
+	if err != nil {
+		return nil, err
+	}
+
+	model := &model.Todo{
+		Text: todo.Text,
+		ID:   todo.ID,
+		Done: todo.Done,
+	}
+
+	return model, nil
 }
 
 // Todos is the resolver for the todos field.
-func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
-	time.Sleep(3 * time.Second) 
-	return r.todos, nil
+func (r *queryResolver) Todos(ctx context.Context, input []*int) ([]*model.Todo, error) {
+	
+	ids := lo.Map(input, func(id *int, index int) int {
+    return *id
+	})
+
+	todoRepo := persistence.NewTodoRepository(r.client)
+	todoUsecase := todo.NewTodoUsecase(todoRepo)
+	todoList, err := todoUsecase.Get(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []*model.Todo
+	for _, t := range todoList {
+		result = append(result, &model.Todo{
+			ID:   t.ID,
+			Text: t.Text,
+			User: &model.User{ID: t.User.ID, Name: t.User.Name},
+		})
+	}
+
+	return result, nil
 }
 
 // User is the resolver for the user field.
 func (r *todoResolver) User(ctx context.Context, obj *model.Todo) (*model.User, error) {
-	log.Printf("------------user-----------")
-	return &model.User{ID: obj.User.ID, Name: "user " + obj.User.ID}, nil
+	log.Print("-user-----")
+	log.Print("%v", obj)
+
+	userRepo := persistence.NewUserRepository(r.client)
+	userUsecase := user.NewUserUsecase(userRepo)
+
+	var ids []int
+	ids = append(ids, obj.User.ID)
+	userList, err := userUsecase.Get(ctx, ids)
+	var result *model.User
+	if len(userList) > 0 {
+		firstUser := userList[0]
+		result = &model.User{
+			ID:   firstUser.ID,
+			Name: firstUser.Name,
+		}
+	} else {
+		result = &model.User{}
+	}
+	if err != nil {
+		return result, err
+	}
+	return result, nil
 }
 
 // Mutation returns graph.MutationResolver implementation.

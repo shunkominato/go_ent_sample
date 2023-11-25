@@ -15,6 +15,7 @@ type Car struct {
 func (Car) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("model"),
+		field.Int("user_id"),
 		field.Time("registered_at"),
 	}
 }
@@ -29,6 +30,8 @@ func (Car) Edges() []ent.Edge {
 				Ref("cars").
 				// setting the edge to unique, ensure
 				// that a car can have only one owner.
-				Unique(),
+				Unique().
+				Required().
+				Field("user_id"),
 	}
 }

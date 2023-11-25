@@ -35,6 +35,12 @@ func (cu *CarUpdate) SetModel(s string) *CarUpdate {
 	return cu
 }
 
+// SetUserID sets the "user_id" field.
+func (cu *CarUpdate) SetUserID(i int) *CarUpdate {
+	cu.mutation.SetUserID(i)
+	return cu
+}
+
 // SetRegisteredAt sets the "registered_at" field.
 func (cu *CarUpdate) SetRegisteredAt(t time.Time) *CarUpdate {
 	cu.mutation.SetRegisteredAt(t)
@@ -44,14 +50,6 @@ func (cu *CarUpdate) SetRegisteredAt(t time.Time) *CarUpdate {
 // SetOwnerID sets the "owner" edge to the User entity by ID.
 func (cu *CarUpdate) SetOwnerID(id int) *CarUpdate {
 	cu.mutation.SetOwnerID(id)
-	return cu
-}
-
-// SetNillableOwnerID sets the "owner" edge to the User entity by ID if the given value is not nil.
-func (cu *CarUpdate) SetNillableOwnerID(id *int) *CarUpdate {
-	if id != nil {
-		cu = cu.SetOwnerID(*id)
-	}
 	return cu
 }
 
@@ -98,7 +96,18 @@ func (cu *CarUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (cu *CarUpdate) check() error {
+	if _, ok := cu.mutation.OwnerID(); cu.mutation.OwnerCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Car.owner"`)
+	}
+	return nil
+}
+
 func (cu *CarUpdate) sqlSave(ctx context.Context) (n int, err error) {
+	if err := cu.check(); err != nil {
+		return n, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(car.Table, car.Columns, sqlgraph.NewFieldSpec(car.FieldID, field.TypeInt))
 	if ps := cu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -168,6 +177,12 @@ func (cuo *CarUpdateOne) SetModel(s string) *CarUpdateOne {
 	return cuo
 }
 
+// SetUserID sets the "user_id" field.
+func (cuo *CarUpdateOne) SetUserID(i int) *CarUpdateOne {
+	cuo.mutation.SetUserID(i)
+	return cuo
+}
+
 // SetRegisteredAt sets the "registered_at" field.
 func (cuo *CarUpdateOne) SetRegisteredAt(t time.Time) *CarUpdateOne {
 	cuo.mutation.SetRegisteredAt(t)
@@ -177,14 +192,6 @@ func (cuo *CarUpdateOne) SetRegisteredAt(t time.Time) *CarUpdateOne {
 // SetOwnerID sets the "owner" edge to the User entity by ID.
 func (cuo *CarUpdateOne) SetOwnerID(id int) *CarUpdateOne {
 	cuo.mutation.SetOwnerID(id)
-	return cuo
-}
-
-// SetNillableOwnerID sets the "owner" edge to the User entity by ID if the given value is not nil.
-func (cuo *CarUpdateOne) SetNillableOwnerID(id *int) *CarUpdateOne {
-	if id != nil {
-		cuo = cuo.SetOwnerID(*id)
-	}
 	return cuo
 }
 
@@ -244,7 +251,18 @@ func (cuo *CarUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (cuo *CarUpdateOne) check() error {
+	if _, ok := cuo.mutation.OwnerID(); cuo.mutation.OwnerCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Car.owner"`)
+	}
+	return nil
+}
+
 func (cuo *CarUpdateOne) sqlSave(ctx context.Context) (_node *Car, err error) {
+	if err := cuo.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(car.Table, car.Columns, sqlgraph.NewFieldSpec(car.FieldID, field.TypeInt))
 	id, ok := cuo.mutation.ID()
 	if !ok {

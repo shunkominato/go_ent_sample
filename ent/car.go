@@ -20,12 +20,13 @@ type Car struct {
 	ID int `json:"id,omitempty"`
 	// Model holds the value of the "model" field.
 	Model string `json:"model,omitempty"`
+	// UserID holds the value of the "user_id" field.
+	UserID int `json:"user_id,omitempty"`
 	// RegisteredAt holds the value of the "registered_at" field.
 	RegisteredAt time.Time `json:"registered_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the CarQuery when eager-loading is set.
 	Edges        CarEdges `json:"edges"`
-	user_cars    *int
 	selectValues sql.SelectValues
 }
 
@@ -56,14 +57,12 @@ func (*Car) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case car.FieldID:
+		case car.FieldID, car.FieldUserID:
 			values[i] = new(sql.NullInt64)
 		case car.FieldModel:
 			values[i] = new(sql.NullString)
 		case car.FieldRegisteredAt:
 			values[i] = new(sql.NullTime)
-		case car.ForeignKeys[0]: // user_cars
-			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -91,18 +90,17 @@ func (c *Car) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				c.Model = value.String
 			}
+		case car.FieldUserID:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field user_id", values[i])
+			} else if value.Valid {
+				c.UserID = int(value.Int64)
+			}
 		case car.FieldRegisteredAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field registered_at", values[i])
 			} else if value.Valid {
 				c.RegisteredAt = value.Time
-			}
-		case car.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field user_cars", value)
-			} else if value.Valid {
-				c.user_cars = new(int)
-				*c.user_cars = int(value.Int64)
 			}
 		default:
 			c.selectValues.Set(columns[i], values[i])
@@ -147,6 +145,9 @@ func (c *Car) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v, ", c.ID))
 	builder.WriteString("model=")
 	builder.WriteString(c.Model)
+	builder.WriteString(", ")
+	builder.WriteString("user_id=")
+	builder.WriteString(fmt.Sprintf("%v", c.UserID))
 	builder.WriteString(", ")
 	builder.WriteString("registered_at=")
 	builder.WriteString(c.RegisteredAt.Format(time.ANSIC))

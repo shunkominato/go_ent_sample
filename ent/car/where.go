@@ -60,6 +60,11 @@ func Model(v string) predicate.Car {
 	return predicate.Car(sql.FieldEQ(FieldModel, v))
 }
 
+// UserID applies equality check predicate on the "user_id" field. It's identical to UserIDEQ.
+func UserID(v int) predicate.Car {
+	return predicate.Car(sql.FieldEQ(FieldUserID, v))
+}
+
 // RegisteredAt applies equality check predicate on the "registered_at" field. It's identical to RegisteredAtEQ.
 func RegisteredAt(v time.Time) predicate.Car {
 	return predicate.Car(sql.FieldEQ(FieldRegisteredAt, v))
@@ -128,6 +133,26 @@ func ModelEqualFold(v string) predicate.Car {
 // ModelContainsFold applies the ContainsFold predicate on the "model" field.
 func ModelContainsFold(v string) predicate.Car {
 	return predicate.Car(sql.FieldContainsFold(FieldModel, v))
+}
+
+// UserIDEQ applies the EQ predicate on the "user_id" field.
+func UserIDEQ(v int) predicate.Car {
+	return predicate.Car(sql.FieldEQ(FieldUserID, v))
+}
+
+// UserIDNEQ applies the NEQ predicate on the "user_id" field.
+func UserIDNEQ(v int) predicate.Car {
+	return predicate.Car(sql.FieldNEQ(FieldUserID, v))
+}
+
+// UserIDIn applies the In predicate on the "user_id" field.
+func UserIDIn(vs ...int) predicate.Car {
+	return predicate.Car(sql.FieldIn(FieldUserID, vs...))
+}
+
+// UserIDNotIn applies the NotIn predicate on the "user_id" field.
+func UserIDNotIn(vs ...int) predicate.Car {
+	return predicate.Car(sql.FieldNotIn(FieldUserID, vs...))
 }
 
 // RegisteredAtEQ applies the EQ predicate on the "registered_at" field.

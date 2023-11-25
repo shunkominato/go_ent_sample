@@ -1,8 +1,11 @@
 package main
 
 import (
-	"go-gql-sample/app/internal/graph"
+	"go-gql-sample/app/ent"
 	"go-gql-sample/app/internal/graph/resolver"
+	"go-gql-sample/app/pkg/config"
+	"go-gql-sample/app/pkg/db"
+	"os"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
@@ -10,10 +13,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func graphqlHandler() gin.HandlerFunc {
+func graphqlHandler(client *ent.Client) gin.HandlerFunc {
 	// NewExecutableSchema and Config are in the generated.go file
 	// Resolver is in the resolver.go file
-	h := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &resolver.Resolver{}}))
+	h := handler.NewDefaultServer(resolver.NewResolver(client))
+
+
 
 	return func(c *gin.Context) {
 		h.ServeHTTP(c.Writer, c.Request)
@@ -29,15 +34,15 @@ func playgroundHandler() gin.HandlerFunc {
 }
 
 func main() {
-	// config.SetConfig()
-	// port := os.Getenv("PORT")
-	// if port == "" {
-	// 	port = "8080"
-	// }
+	config.SetConfig()
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
 
-	// db, _ := db.NewDatabase()	
-	// client := db.EntClient()
-	// defer db.Close()
+	db, _ := db.NewDatabase()	
+	client := db.EntClient()
+	defer db.Close()
 	// srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &resolver.Resolver{}}))
 
 	r := gin.Default()
@@ -45,7 +50,7 @@ func main() {
 	config.AllowAllOrigins = true
 	r.Use(cors.New(config))
 
-	r.POST("/query", graphqlHandler())
+	r.POST("/query", graphqlHandler(client))
 	r.GET("/", playgroundHandler())
 	r.Run()
 	

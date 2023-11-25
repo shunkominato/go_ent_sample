@@ -15,6 +15,7 @@ import (
 	"go-gql-sample/app/ent/company"
 	"go-gql-sample/app/ent/group"
 	"go-gql-sample/app/ent/team"
+	"go-gql-sample/app/ent/todo"
 	"go-gql-sample/app/ent/user"
 
 	"entgo.io/ent"
@@ -36,6 +37,8 @@ type Client struct {
 	Group *GroupClient
 	// Team is the client for interacting with the Team builders.
 	Team *TeamClient
+	// Todo is the client for interacting with the Todo builders.
+	Todo *TodoClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 }
@@ -55,6 +58,7 @@ func (c *Client) init() {
 	c.Company = NewCompanyClient(c.config)
 	c.Group = NewGroupClient(c.config)
 	c.Team = NewTeamClient(c.config)
+	c.Todo = NewTodoClient(c.config)
 	c.User = NewUserClient(c.config)
 }
 
@@ -145,6 +149,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Company: NewCompanyClient(cfg),
 		Group:   NewGroupClient(cfg),
 		Team:    NewTeamClient(cfg),
+		Todo:    NewTodoClient(cfg),
 		User:    NewUserClient(cfg),
 	}, nil
 }
@@ -169,6 +174,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Company: NewCompanyClient(cfg),
 		Group:   NewGroupClient(cfg),
 		Team:    NewTeamClient(cfg),
+		Todo:    NewTodoClient(cfg),
 		User:    NewUserClient(cfg),
 	}, nil
 }
@@ -198,21 +204,21 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
-	c.Car.Use(hooks...)
-	c.Company.Use(hooks...)
-	c.Group.Use(hooks...)
-	c.Team.Use(hooks...)
-	c.User.Use(hooks...)
+	for _, n := range []interface{ Use(...Hook) }{
+		c.Car, c.Company, c.Group, c.Team, c.Todo, c.User,
+	} {
+		n.Use(hooks...)
+	}
 }
 
 // Intercept adds the query interceptors to all the entity clients.
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
-	c.Car.Intercept(interceptors...)
-	c.Company.Intercept(interceptors...)
-	c.Group.Intercept(interceptors...)
-	c.Team.Intercept(interceptors...)
-	c.User.Intercept(interceptors...)
+	for _, n := range []interface{ Intercept(...Interceptor) }{
+		c.Car, c.Company, c.Group, c.Team, c.Todo, c.User,
+	} {
+		n.Intercept(interceptors...)
+	}
 }
 
 // Mutate implements the ent.Mutator interface.
@@ -226,6 +232,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Group.mutate(ctx, m)
 	case *TeamMutation:
 		return c.Team.mutate(ctx, m)
+	case *TodoMutation:
+		return c.Todo.mutate(ctx, m)
 	case *UserMutation:
 		return c.User.mutate(ctx, m)
 	default:
@@ -781,6 +789,155 @@ func (c *TeamClient) mutate(ctx context.Context, m *TeamMutation) (Value, error)
 	}
 }
 
+// TodoClient is a client for the Todo schema.
+type TodoClient struct {
+	config
+}
+
+// NewTodoClient returns a client for the Todo from the given config.
+func NewTodoClient(c config) *TodoClient {
+	return &TodoClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `todo.Hooks(f(g(h())))`.
+func (c *TodoClient) Use(hooks ...Hook) {
+	c.hooks.Todo = append(c.hooks.Todo, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `todo.Intercept(f(g(h())))`.
+func (c *TodoClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Todo = append(c.inters.Todo, interceptors...)
+}
+
+// Create returns a builder for creating a Todo entity.
+func (c *TodoClient) Create() *TodoCreate {
+	mutation := newTodoMutation(c.config, OpCreate)
+	return &TodoCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Todo entities.
+func (c *TodoClient) CreateBulk(builders ...*TodoCreate) *TodoCreateBulk {
+	return &TodoCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *TodoClient) MapCreateBulk(slice any, setFunc func(*TodoCreate, int)) *TodoCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &TodoCreateBulk{err: fmt.Errorf("calling to TodoClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*TodoCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &TodoCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Todo.
+func (c *TodoClient) Update() *TodoUpdate {
+	mutation := newTodoMutation(c.config, OpUpdate)
+	return &TodoUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *TodoClient) UpdateOne(t *Todo) *TodoUpdateOne {
+	mutation := newTodoMutation(c.config, OpUpdateOne, withTodo(t))
+	return &TodoUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *TodoClient) UpdateOneID(id int) *TodoUpdateOne {
+	mutation := newTodoMutation(c.config, OpUpdateOne, withTodoID(id))
+	return &TodoUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Todo.
+func (c *TodoClient) Delete() *TodoDelete {
+	mutation := newTodoMutation(c.config, OpDelete)
+	return &TodoDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *TodoClient) DeleteOne(t *Todo) *TodoDeleteOne {
+	return c.DeleteOneID(t.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *TodoClient) DeleteOneID(id int) *TodoDeleteOne {
+	builder := c.Delete().Where(todo.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &TodoDeleteOne{builder}
+}
+
+// Query returns a query builder for Todo.
+func (c *TodoClient) Query() *TodoQuery {
+	return &TodoQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeTodo},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Todo entity by its id.
+func (c *TodoClient) Get(ctx context.Context, id int) (*Todo, error) {
+	return c.Query().Where(todo.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *TodoClient) GetX(ctx context.Context, id int) *Todo {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryOwner queries the owner edge of a Todo.
+func (c *TodoClient) QueryOwner(t *Todo) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := t.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(todo.Table, todo.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, todo.OwnerTable, todo.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(t.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *TodoClient) Hooks() []Hook {
+	return c.hooks.Todo
+}
+
+// Interceptors returns the client interceptors.
+func (c *TodoClient) Interceptors() []Interceptor {
+	return c.inters.Todo
+}
+
+func (c *TodoClient) mutate(ctx context.Context, m *TodoMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&TodoCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&TodoUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&TodoUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&TodoDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Todo mutation op: %q", m.Op())
+	}
+}
+
 // UserClient is a client for the User schema.
 type UserClient struct {
 	config
@@ -905,6 +1062,22 @@ func (c *UserClient) QueryCars(u *User) *CarQuery {
 	return query
 }
 
+// QueryTodos queries the todos edge of a User.
+func (c *UserClient) QueryTodos(u *User) *TodoQuery {
+	query := (&TodoClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(todo.Table, todo.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.TodosTable, user.TodosColumn),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *UserClient) Hooks() []Hook {
 	return c.hooks.User
@@ -933,9 +1106,9 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Car, Company, Group, Team, User []ent.Hook
+		Car, Company, Group, Team, Todo, User []ent.Hook
 	}
 	inters struct {
-		Car, Company, Group, Team, User []ent.Interceptor
+		Car, Company, Group, Team, Todo, User []ent.Interceptor
 	}
 )

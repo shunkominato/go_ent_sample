@@ -2,19 +2,22 @@
 #
 # https://gqlgen.com/getting-started/
 
+directive @validation(format: String) on INPUT_FIELD_DEFINITION
+
 type Todo {
-  id: ID!
+  id: Int!
   text: String!
   done: Boolean!
   user: User!
 }
 
 type Query {
-  todos: [Todo!]!
+  todos(input: [Int]): [Todo!]!
 }
 
 input NewTodo {
-  text: String!
+  text: String! @validation(format: "required,lte=5")
+  done: Boolean!
   userId: String!
 }
 

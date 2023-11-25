@@ -10,6 +10,7 @@ import (
 	"go-gql-sample/app/ent/company"
 	"go-gql-sample/app/ent/group"
 	"go-gql-sample/app/ent/team"
+	"go-gql-sample/app/ent/todo"
 	"go-gql-sample/app/ent/user"
 	"reflect"
 	"sync"
@@ -81,6 +82,7 @@ func checkColumn(table, column string) error {
 			company.Table: company.ValidColumn,
 			group.Table:   group.ValidColumn,
 			team.Table:    team.ValidColumn,
+			todo.Table:    todo.ValidColumn,
 			user.Table:    user.ValidColumn,
 		})
 	})

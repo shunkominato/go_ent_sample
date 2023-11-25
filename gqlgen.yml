@@ -93,3 +93,6 @@ models:
     fields:
       user:
         resolver: true
+directives:
+  validation:
+    skip_runtime: true
