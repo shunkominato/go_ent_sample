@@ -1,5 +1,0 @@
-extend type Query {
-  todo(id: Int): Todo
-  todos: [Todo]
-  todoPagination(limit: Int!, offset: Int): TodoPagination!
-}

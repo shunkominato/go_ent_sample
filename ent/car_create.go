@@ -27,6 +27,12 @@ func (cc *CarCreate) SetModel(s string) *CarCreate {
 	return cc
 }
 
+// SetUserID sets the "user_id" field.
+func (cc *CarCreate) SetUserID(i int) *CarCreate {
+	cc.mutation.SetUserID(i)
+	return cc
+}
+
 // SetRegisteredAt sets the "registered_at" field.
 func (cc *CarCreate) SetRegisteredAt(t time.Time) *CarCreate {
 	cc.mutation.SetRegisteredAt(t)
@@ -36,14 +42,6 @@ func (cc *CarCreate) SetRegisteredAt(t time.Time) *CarCreate {
 // SetOwnerID sets the "owner" edge to the User entity by ID.
 func (cc *CarCreate) SetOwnerID(id int) *CarCreate {
 	cc.mutation.SetOwnerID(id)
-	return cc
-}
-
-// SetNillableOwnerID sets the "owner" edge to the User entity by ID if the given value is not nil.
-func (cc *CarCreate) SetNillableOwnerID(id *int) *CarCreate {
-	if id != nil {
-		cc = cc.SetOwnerID(*id)
-	}
 	return cc
 }
 
@@ -89,8 +87,14 @@ func (cc *CarCreate) check() error {
 	if _, ok := cc.mutation.Model(); !ok {
 		return &ValidationError{Name: "model", err: errors.New(`ent: missing required field "Car.model"`)}
 	}
+	if _, ok := cc.mutation.UserID(); !ok {
+		return &ValidationError{Name: "user_id", err: errors.New(`ent: missing required field "Car.user_id"`)}
+	}
 	if _, ok := cc.mutation.RegisteredAt(); !ok {
 		return &ValidationError{Name: "registered_at", err: errors.New(`ent: missing required field "Car.registered_at"`)}
+	}
+	if _, ok := cc.mutation.OwnerID(); !ok {
+		return &ValidationError{Name: "owner", err: errors.New(`ent: missing required edge "Car.owner"`)}
 	}
 	return nil
 }
@@ -140,7 +144,7 @@ func (cc *CarCreate) createSpec() (*Car, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.user_cars = &nodes[0]
+		_node.UserID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

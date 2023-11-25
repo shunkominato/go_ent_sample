@@ -30,9 +30,11 @@ type User struct {
 type UserEdges struct {
 	// Cars holds the value of the cars edge.
 	Cars []*Car `json:"cars,omitempty"`
+	// Todos holds the value of the todos edge.
+	Todos []*Todo `json:"todos,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // CarsOrErr returns the Cars value or an error if the edge
@@ -42,6 +44,15 @@ func (e UserEdges) CarsOrErr() ([]*Car, error) {
 		return e.Cars, nil
 	}
 	return nil, &NotLoadedError{edge: "cars"}
+}
+
+// TodosOrErr returns the Todos value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) TodosOrErr() ([]*Todo, error) {
+	if e.loadedTypes[1] {
+		return e.Todos, nil
+	}
+	return nil, &NotLoadedError{edge: "todos"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -102,6 +113,11 @@ func (u *User) Value(name string) (ent.Value, error) {
 // QueryCars queries the "cars" edge of the User entity.
 func (u *User) QueryCars() *CarQuery {
 	return NewUserClient(u.config).QueryCars(u)
+}
+
+// QueryTodos queries the "todos" edge of the User entity.
+func (u *User) QueryTodos() *TodoQuery {
+	return NewUserClient(u.config).QueryTodos(u)
 }
 
 // Update returns a builder for updating this User.

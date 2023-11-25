@@ -2,22 +2,24 @@ package main
 
 import (
 	"go-gql-sample/app/ent"
-	"go-gql-sample/app/internal/infrastructure/server/graph"
-	"go-gql-sample/app/internal/infrastructure/server/graph/resolver"
+	"go-gql-sample/app/internal/graph/resolver"
+	"go-gql-sample/app/pkg/config"
+	"go-gql-sample/app/pkg/db"
+	"os"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
-const defaultPort = "8080"
+func graphqlHandler(client *ent.Client) gin.HandlerFunc {
+	// NewExecutableSchema and Config are in the generated.go file
+	// Resolver is in the resolver.go file
+	h := handler.NewDefaultServer(resolver.NewResolver(client))
 
-func graphqlHandler(client *ent.Client) gin.HandlerFunc {	
-	h := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{
-		Resolvers: &resolver.Resolver{
-			Client: client,
-		},
-	}))
+
+
 	return func(c *gin.Context) {
 		h.ServeHTTP(c.Writer, c.Request)
 	}
@@ -31,34 +33,30 @@ func playgroundHandler() gin.HandlerFunc {
 	}
 }
 
-// func main() {
-// 	godotenv.Load(".env")
+func main() {
+	config.SetConfig()
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
 
-// 	config.SetConfig()
+	db, _ := db.NewDatabase()	
+	client := db.EntClient()
+	defer db.Close()
+	// srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &resolver.Resolver{}}))
 
-// 	port := os.Getenv("PORT")
-// 	if port == "" {
-// 		port = defaultPort
-// 	}
+	r := gin.Default()
+	config := cors.DefaultConfig()
+	config.AllowAllOrigins = true
+	r.Use(cors.New(config))
 
-// 	r := gin.Default()
+	r.POST("/query", graphqlHandler(client))
+	r.GET("/", playgroundHandler())
+	r.Run()
+	
+	// http.Handle("/", playground.Handler("GraphQL playground", "/query"))
+	// http.Handle("/query", srv)
 
-// 	db, _ := db.NewDatabase()	
-// 	client := db.EntClient()
-// 	defer db.Close()
-
-// 	loaders := Dataloader.NewLoaders(client)
-// 	r.Use(Dataloader.Middleware(loaders))
-
-// 	config := cors.DefaultConfig()
-// 	config.AllowAllOrigins = true
-// 	r.Use(cors.New(config))
-
-// 	r.POST("/query", graphqlHandler(client))
-// 	r.GET("/", playgroundHandler())
-
-// 	r.Run()
-
-// 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
-// 	log.Fatal(http.ListenAndServe(":"+port, nil))
-// }
+	// log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
+	// log.Fatal(http.ListenAndServe(":"+port, nil))
+}

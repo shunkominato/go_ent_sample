@@ -23,7 +23,6 @@ type CarQuery struct {
 	inters     []Interceptor
 	predicates []predicate.Car
 	withOwner  *UserQuery
-	withFKs    bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -369,18 +368,11 @@ func (cq *CarQuery) prepareQuery(ctx context.Context) error {
 func (cq *CarQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Car, error) {
 	var (
 		nodes       = []*Car{}
-		withFKs     = cq.withFKs
 		_spec       = cq.querySpec()
 		loadedTypes = [1]bool{
 			cq.withOwner != nil,
 		}
 	)
-	if cq.withOwner != nil {
-		withFKs = true
-	}
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, car.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Car).scanValues(nil, columns)
 	}
@@ -412,10 +404,7 @@ func (cq *CarQuery) loadOwner(ctx context.Context, query *UserQuery, nodes []*Ca
 	ids := make([]int, 0, len(nodes))
 	nodeids := make(map[int][]*Car)
 	for i := range nodes {
-		if nodes[i].user_cars == nil {
-			continue
-		}
-		fk := *nodes[i].user_cars
+		fk := nodes[i].UserID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -432,7 +421,7 @@ func (cq *CarQuery) loadOwner(ctx context.Context, query *UserQuery, nodes []*Ca
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "user_cars" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "user_id" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -465,6 +454,9 @@ func (cq *CarQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != car.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if cq.withOwner != nil {
+			_spec.Node.AddColumnOnce(car.FieldUserID)
 		}
 	}
 	if ps := cq.predicates; len(ps) > 0 {
